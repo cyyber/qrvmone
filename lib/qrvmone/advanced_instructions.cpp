@@ -75,9 +75,13 @@ inline code_iterator impl(AdvancedExecutionState& state, code_iterator pos) noex
 
 /// Fake wrap for generic instruction implementations accessing current code location.
 /// This is to make any op<...> compile, but pointers must be replaced with Advanced-specific
-/// implementation. Definition not provided.
+/// implementation. Should never be called (overwritten in dispatch table).
 template <code_iterator InstrFn(AdvancedExecutionState&, code_iterator)>
-const Instruction* op(const Instruction* /*instr*/, AdvancedExecutionState& state) noexcept;
+const Instruction* op(const Instruction* /*instr*/, AdvancedExecutionState& state) noexcept
+{
+    state.status = QRVMC_INTERNAL_ERROR;
+    return nullptr;
+}
 
 namespace
 {
@@ -250,7 +254,7 @@ constexpr std::array<instruction_exec_fn, 256> instruction_implementations = [](
 
     for (auto op = size_t{OP_PUSH1}; op <= OP_PUSH8; ++op)
         table[op] = op_push_small;
-    for (auto op = size_t{OP_PUSH9}; op <= OP_PUSH32; ++op)
+    for (auto op = size_t{OP_PUSH9}; op <= OP_PUSH64; ++op)
         table[op] = op_push_full;
 
     table[OP_CREATE] = op_create<OP_CREATE>;

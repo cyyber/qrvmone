@@ -11,31 +11,96 @@
 
 namespace qrvmone
 {
+
+/// Generic addmod for any uint<N> (intx only provides uint256 specialization)
+template <unsigned N>
+inline constexpr intx::uint<N> addmod(const intx::uint<N>& x, const intx::uint<N>& y, const intx::uint<N>& mod) noexcept
+{
+    auto s = intx::addc(x, y);
+    intx::uint<N + 64> n = s.value;
+    n[intx::uint<N>::num_words] = s.carry;
+    return intx::udivrem(n, mod).rem;
+}
+
+/// Generic mulmod for any uint<N>
+template <unsigned N>
+inline constexpr intx::uint<N> mulmod(const intx::uint<N>& x, const intx::uint<N>& y, const intx::uint<N>& mod) noexcept
+{
+    return intx::udivrem(intx::umul(x, y), mod).rem;
+}
+
+/// Load a value from a qrvmc type as right-aligned uint512 (for uint/address/balance).
+/// intx::be::load produces left-aligned values; this shifts them right.
+template <typename T>
+inline uint512 load_uint(const T& src) noexcept
+{
+    // be::load puts bytes at MSB (left-aligned). We want right-aligned.
+    return uint512(intx::be::load<uint256>(src));
+}
+
+/// Special case: load from qrvmc_address (48 bytes) as right-aligned uint512
+inline uint512 load_uint_addr(const qrvmc_address& src) noexcept
+{
+    // Address is right-aligned on the stack (like uint384).
+    // Load 48 bytes from qrvmc_address into lower 384 bits of uint512.
+    uint512 result = 0;
+    for (size_t i = 0; i < 48; ++i)
+        result = (result << 8) | src.bytes[i];
+    return result;  // Value is in lower 384 bits, upper 128 bits are zero.
+}
+
+/// Store uint512 into qrvmc_address, taking lower 48 bytes (right-aligned address)
+inline qrvmc_address trunc_to_addr(const uint512& x) noexcept
+{
+    qrvmc_address addr{};
+    uint512 tmp = x;
+    for (int i = 47; i >= 0; --i)
+    {
+        addr.bytes[i] = static_cast<uint8_t>(tmp);
+        tmp >>= 8;
+    }
+    return addr;
+}
+
+/// Store right-aligned uint512 value into qrvmc_bytes32 (64 bytes, big-endian).
+/// Lower 256 bits go into bytes 32-63. Upper 256 bits into bytes 0-31.
+inline qrvmc::bytes32 store_uint(const uint512& x) noexcept
+{
+    qrvmc::bytes32 result{};
+    uint512 tmp = x;
+    for (int i = 63; i >= 0; --i)
+    {
+        result.bytes[i] = static_cast<uint8_t>(tmp);
+        tmp >>= 8;
+    }
+    return result;
+}
+
 using code_iterator = const uint8_t*;
 
 /// Represents the pointer to the stack top item
 /// and allows retrieving stack items and manipulating the pointer.
 class StackTop
 {
-    uint256* m_top;
+    uint512* m_top;
 
 public:
-    StackTop(uint256* top) noexcept : m_top{top} {}
+    StackTop(uint512* top) noexcept : m_top{top} {}
 
     /// Returns the reference to the stack item by index, where 0 means the top item
     /// and positive index values the items further down the stack.
     /// Using [-1] is also valid, but .push() should be used instead.
-    [[nodiscard]] uint256& operator[](int index) noexcept { return m_top[-index]; }
+    [[nodiscard]] uint512& operator[](int index) noexcept { return m_top[-index]; }
 
     /// Returns the reference to the stack top item.
-    [[nodiscard]] uint256& top() noexcept { return *m_top; }
+    [[nodiscard]] uint512& top() noexcept { return *m_top; }
 
     /// Returns the current top item and move the stack top pointer down.
     /// The value is returned by reference because the stack slot remains valid.
-    [[nodiscard]] uint256& pop() noexcept { return *m_top--; }
+    [[nodiscard]] uint512& pop() noexcept { return *m_top--; }
 
     /// Assigns the value to the stack top and moves the stack top pointer up.
-    void push(const uint256& value) noexcept { *++m_top = value; }
+    void push(const uint512& value) noexcept { *++m_top = value; }
 };
 
 
@@ -52,8 +117,8 @@ struct TermResult : Result
 
 constexpr auto max_buffer_size = std::numeric_limits<uint32_t>::max();
 
-/// The size of the QRVM 256-bit word.
-constexpr auto word_size = 32;
+/// The size of the QRVM 512-bit word.
+constexpr auto word_size = 64;
 
 /// Returns number of words what would fit to provided number of bytes,
 /// i.e. it rounds up the number bytes to number of words.
@@ -89,12 +154,12 @@ inline constexpr int64_t num_words(uint64_t size_in_bytes) noexcept
 
 /// Check memory requirements of a reasonable size.
 inline bool check_memory(
-    int64_t& gas_left, Memory& memory, const uint256& offset, uint64_t size) noexcept
+    int64_t& gas_left, Memory& memory, const uint512& offset, uint64_t size) noexcept
 {
     // TODO: This should be done in intx.
     // There is "branchless" variant of this using | instead of ||, but benchmarks difference
     // is within noise. This should be decided when moving the implementation to intx.
-    if (((offset[3] | offset[2] | offset[1]) != 0) || (offset[0] > max_buffer_size))
+    if (((offset[7] | offset[6] | offset[5] | offset[4] | offset[3] | offset[2] | offset[1]) != 0) || (offset[0] > max_buffer_size))
         return false;
 
     const auto new_size = static_cast<uint64_t>(offset) + size;
@@ -106,15 +171,15 @@ inline bool check_memory(
 
 /// Check memory requirements for "copy" instructions.
 inline bool check_memory(
-    int64_t& gas_left, Memory& memory, const uint256& offset, const uint256& size) noexcept
+    int64_t& gas_left, Memory& memory, const uint512& offset, const uint512& size) noexcept
 {
     if (size == 0)  // Copy of size 0 is always valid (even if offset is huge).
         return true;
 
-    // This check has 3 same word checks with the check above.
+    // This check has 7 same word checks with the check above.
     // However, compilers do decent although not perfect job unifying common instructions.
     // TODO: This should be done in intx.
-    if (((size[3] | size[2] | size[1]) != 0) || (size[0] > max_buffer_size))
+    if (((size[7] | size[6] | size[5] | size[4] | size[3] | size[2] | size[1]) != 0) || (size[0] > max_buffer_size))
         return false;
 
     return check_memory(gas_left, memory, offset, static_cast<uint64_t>(size));
@@ -188,7 +253,7 @@ inline void addmod(StackTop stack) noexcept
     const auto& x = stack.pop();
     const auto& y = stack.pop();
     auto& m = stack.top();
-    m = m != 0 ? intx::addmod(x, y, m) : 0;
+    m = m != 0 ? qrvmone::addmod(x, y, m) : 0;
 }
 
 inline void mulmod(StackTop stack) noexcept
@@ -196,7 +261,7 @@ inline void mulmod(StackTop stack) noexcept
     const auto& x = stack[0];
     const auto& y = stack[1];
     auto& m = stack[2];
-    m = m != 0 ? intx::mulmod(x, y, m) : 0;
+    m = m != 0 ? qrvmone::mulmod(x, y, m) : 0;
 }
 
 inline Result exp(StackTop stack, int64_t gas_left, ExecutionState& /*state*/) noexcept
@@ -220,7 +285,7 @@ inline void signextend(StackTop stack) noexcept
     const auto& ext = stack.pop();
     auto& x = stack.top();
 
-    if (ext < 31)  // For 31 we also don't need to do anything.
+    if (ext < 63)  // For 63 we also don't need to do anything.
     {
         const auto e = ext[0];  // uint256 -> uint64.
         const auto sign_word_index =
@@ -243,7 +308,7 @@ inline void signextend(StackTop stack) noexcept
         // the sign-extended byte. Shift by any value 7-63 would work.
         const auto sign_ex = static_cast<uint64_t>(static_cast<int64_t>(sext_byte) >> 8);
 
-        for (size_t i = 3; i > sign_word_index; --i)
+        for (size_t i = 7; i > sign_word_index; --i)
             x[i] = sign_ex;  // Clear extended words.
     }
 }
@@ -307,10 +372,10 @@ inline void byte(StackTop stack) noexcept
     const auto& n = stack.pop();
     auto& x = stack.top();
 
-    const bool n_valid = n < 32;
+    const bool n_valid = n < 64;
     const uint64_t byte_mask = (n_valid ? 0xff : 0);
 
-    const auto index = 31 - static_cast<unsigned>(n[0] % 32);
+    const auto index = 63 - static_cast<unsigned>(n[0] % 64);
     const auto word = x[index / 8];
     const auto byte_index = index % 8;
     const auto byte = (word >> (byte_index * 8)) & byte_mask;
@@ -332,10 +397,10 @@ inline void sar(StackTop stack) noexcept
     const auto& y = stack.pop();
     auto& x = stack.top();
 
-    const bool is_neg = static_cast<int64_t>(x[3]) < 0;  // Inspect the top bit (words are LE).
-    const auto sign_mask = is_neg ? ~uint256{} : uint256{};
+    const bool is_neg = static_cast<int64_t>(x[7]) < 0;  // Inspect the top bit (words are LE).
+    const auto sign_mask = is_neg ? ~uint512{} : uint512{};
 
-    const auto mask_shift = (y < 256) ? (256 - y[0]) : 0;
+    const auto mask_shift = (y < 512) ? (512 - y[0]) : 0;
     x = (x >> y) | (sign_mask << mask_shift);
 }
 
@@ -355,20 +420,21 @@ inline Result keccak256(StackTop stack, int64_t gas_left, ExecutionState& state)
         return {QRVMC_OUT_OF_GAS, gas_left};
 
     auto data = s != 0 ? &state.memory[i] : nullptr;
-    size = intx::be::load<uint256>(ethash::keccak256(data, s));
+    // Left-align hash in 512-bit word (bytes32 is left-aligned)
+    size = uint512(intx::be::load<uint256>(ethash::keccak256(data, s))) << 256;
     return {QRVMC_SUCCESS, gas_left};
 }
 
 
 inline void address(StackTop stack, ExecutionState& state) noexcept
 {
-    stack.push(intx::be::load<uint256>(state.msg->recipient));
+    stack.push(load_uint_addr(state.msg->recipient));
 }
 
 inline Result balance(StackTop stack, int64_t gas_left, ExecutionState& state) noexcept
 {
     auto& x = stack.top();
-    const auto addr = intx::be::trunc<qrvmc::address>(x);
+    const auto addr = trunc_to_addr(x);
 
     if (state.host.access_account(addr) == QRVMC_ACCESS_COLD)
     {
@@ -376,23 +442,23 @@ inline Result balance(StackTop stack, int64_t gas_left, ExecutionState& state) n
             return {QRVMC_OUT_OF_GAS, gas_left};
     }
 
-    x = intx::be::load<uint256>(state.host.get_balance(addr));
+    x = intx::be::load<uint512>(state.host.get_balance(addr));
     return {QRVMC_SUCCESS, gas_left};
 }
 
 inline void origin(StackTop stack, ExecutionState& state) noexcept
 {
-    stack.push(intx::be::load<uint256>(state.get_tx_context().tx_origin));
+    stack.push(load_uint_addr(state.get_tx_context().tx_origin));
 }
 
 inline void caller(StackTop stack, ExecutionState& state) noexcept
 {
-    stack.push(intx::be::load<uint256>(state.msg->sender));
+    stack.push(load_uint_addr(state.msg->sender));
 }
 
 inline void callvalue(StackTop stack, ExecutionState& state) noexcept
 {
-    stack.push(intx::be::load<uint256>(state.msg->value));
+    stack.push(intx::be::load<uint512>(state.msg->value));
 }
 
 inline void calldataload(StackTop stack, ExecutionState& state) noexcept
@@ -404,13 +470,13 @@ inline void calldataload(StackTop stack, ExecutionState& state) noexcept
     else
     {
         const auto begin = static_cast<size_t>(index);
-        const auto end = std::min(begin + 32, state.msg->input_size);
+        const auto end = std::min(begin + 64, state.msg->input_size);
 
-        uint8_t data[32] = {};
+        uint8_t data[64] = {};
         for (size_t i = 0; i < (end - begin); ++i)
             data[i] = state.msg->input_data[begin + i];
 
-        index = intx::be::load<uint256>(data);
+        index = intx::be::load<uint512>(data);
     }
 }
 
@@ -486,18 +552,18 @@ inline Result codecopy(StackTop stack, int64_t gas_left, ExecutionState& state) 
 
 inline void gasprice(StackTop stack, ExecutionState& state) noexcept
 {
-    stack.push(intx::be::load<uint256>(state.get_tx_context().tx_gas_price));
+    stack.push(intx::be::load<uint512>(state.get_tx_context().tx_gas_price));
 }
 
 inline void basefee(StackTop stack, ExecutionState& state) noexcept
 {
-    stack.push(intx::be::load<uint256>(state.get_tx_context().block_base_fee));
+    stack.push(intx::be::load<uint512>(state.get_tx_context().block_base_fee));
 }
 
 inline Result extcodesize(StackTop stack, int64_t gas_left, ExecutionState& state) noexcept
 {
     auto& x = stack.top();
-    const auto addr = intx::be::trunc<qrvmc::address>(x);
+    const auto addr = trunc_to_addr(x);
 
     if (state.host.access_account(addr) == QRVMC_ACCESS_COLD)
     {
@@ -511,7 +577,7 @@ inline Result extcodesize(StackTop stack, int64_t gas_left, ExecutionState& stat
 
 inline Result extcodecopy(StackTop stack, int64_t gas_left, ExecutionState& state) noexcept
 {
-    const auto addr = intx::be::trunc<qrvmc::address>(stack.pop());
+    const auto addr = trunc_to_addr(stack.pop());
     const auto& mem_index = stack.pop();
     const auto& input_index = stack.pop();
     const auto& size = stack.pop();
@@ -580,7 +646,7 @@ inline Result returndatacopy(StackTop stack, int64_t gas_left, ExecutionState& s
 inline Result extcodehash(StackTop stack, int64_t gas_left, ExecutionState& state) noexcept
 {
     auto& x = stack.top();
-    const auto addr = intx::be::trunc<qrvmc::address>(x);
+    const auto addr = trunc_to_addr(x);
 
     if (state.host.access_account(addr) == QRVMC_ACCESS_COLD)
     {
@@ -588,7 +654,7 @@ inline Result extcodehash(StackTop stack, int64_t gas_left, ExecutionState& stat
             return {QRVMC_OUT_OF_GAS, gas_left};
     }
 
-    x = intx::be::load<uint256>(state.host.get_code_hash(addr));
+    x = intx::be::load<uint512>(state.host.get_code_hash(addr));
     return {QRVMC_SUCCESS, gas_left};
 }
 
@@ -602,12 +668,12 @@ inline void blockhash(StackTop stack, ExecutionState& state) noexcept
     const auto n = static_cast<int64_t>(number);
     const auto header =
         (number < upper_bound && n >= lower_bound) ? state.host.get_block_hash(n) : qrvmc::bytes32{};
-    number = intx::be::load<uint256>(header);
+    number = intx::be::load<uint512>(header);
 }
 
 inline void coinbase(StackTop stack, ExecutionState& state) noexcept
 {
-    stack.push(intx::be::load<uint256>(state.get_tx_context().block_coinbase));
+    stack.push(load_uint_addr(state.get_tx_context().block_coinbase));
 }
 
 inline void timestamp(StackTop stack, ExecutionState& state) noexcept
@@ -624,7 +690,7 @@ inline void number(StackTop stack, ExecutionState& state) noexcept
 
 inline void prevrandao(StackTop stack, ExecutionState& state) noexcept
 {
-    stack.push(intx::be::load<uint256>(state.get_tx_context().block_prev_randao));
+    stack.push(intx::be::load<uint512>(state.get_tx_context().block_prev_randao));
 }
 
 inline void gaslimit(StackTop stack, ExecutionState& state) noexcept
@@ -634,23 +700,23 @@ inline void gaslimit(StackTop stack, ExecutionState& state) noexcept
 
 inline void chainid(StackTop stack, ExecutionState& state) noexcept
 {
-    stack.push(intx::be::load<uint256>(state.get_tx_context().chain_id));
+    stack.push(intx::be::load<uint512>(state.get_tx_context().chain_id));
 }
 
 inline void selfbalance(StackTop stack, ExecutionState& state) noexcept
 {
     // TODO: introduce selfbalance in QRVMC?
-    stack.push(intx::be::load<uint256>(state.host.get_balance(state.msg->recipient)));
+    stack.push(intx::be::load<uint512>(state.host.get_balance(state.msg->recipient)));
 }
 
 inline Result mload(StackTop stack, int64_t gas_left, ExecutionState& state) noexcept
 {
     auto& index = stack.top();
 
-    if (!check_memory(gas_left, state.memory, index, 32))
+    if (!check_memory(gas_left, state.memory, index, 64))
         return {QRVMC_OUT_OF_GAS, gas_left};
 
-    index = intx::be::unsafe::load<uint256>(&state.memory[static_cast<size_t>(index)]);
+    index = intx::be::unsafe::load<uint512>(&state.memory[static_cast<size_t>(index)]);
     return {QRVMC_SUCCESS, gas_left};
 }
 
@@ -659,7 +725,7 @@ inline Result mstore(StackTop stack, int64_t gas_left, ExecutionState& state) no
     const auto& index = stack.pop();
     const auto& value = stack.pop();
 
-    if (!check_memory(gas_left, state.memory, index, 32))
+    if (!check_memory(gas_left, state.memory, index, 64))
         return {QRVMC_OUT_OF_GAS, gas_left};
 
     intx::be::unsafe::store(&state.memory[static_cast<size_t>(index)], value);
@@ -683,7 +749,7 @@ Result sload(StackTop stack, int64_t gas_left, ExecutionState& state) noexcept;
 Result sstore(StackTop stack, int64_t gas_left, ExecutionState& state) noexcept;
 
 /// Internal jump implementation for JUMP/JUMPI instructions.
-inline code_iterator jump_impl(ExecutionState& state, const uint256& dst) noexcept
+inline code_iterator jump_impl(ExecutionState& state, const uint512& dst) noexcept
 {
     const auto& jumpdest_map = state.analysis.baseline->jumpdest_map;
     if (dst >= jumpdest_map.size() || !jumpdest_map[static_cast<size_t>(dst)])
@@ -823,11 +889,19 @@ inline void swap(StackTop stack) noexcept
     auto t1 = t[1];
     auto t2 = t[2];
     auto t3 = t[3];
+    auto t4 = t[4];
+    auto t5 = t[5];
+    auto t6 = t[6];
+    auto t7 = t[7];
     t = a;
     a[0] = t0;
     a[1] = t1;
     a[2] = t2;
     a[3] = t3;
+    a[4] = t4;
+    a[5] = t5;
+    a[6] = t6;
+    a[7] = t7;
 }
 
 template <size_t NumTopics>

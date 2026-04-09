@@ -67,7 +67,7 @@ constexpr auto sstore_costs = []() noexcept {
 Result sload(StackTop stack, int64_t gas_left, ExecutionState& state) noexcept
 {
     auto& x = stack.top();
-    const auto key = intx::be::store<qrvmc::bytes32>(x);
+    const auto key = store_uint(x);
 
     if (state.host.access_storage(state.msg->recipient, key) == QRVMC_ACCESS_COLD)
     {
@@ -79,7 +79,7 @@ Result sload(StackTop stack, int64_t gas_left, ExecutionState& state) noexcept
             return {QRVMC_OUT_OF_GAS, gas_left};
     }
 
-    x = intx::be::load<uint256>(state.host.get_storage(state.msg->recipient, key));
+    x = intx::be::load<uint512>(state.host.get_storage(state.msg->recipient, key));
 
     return {QRVMC_SUCCESS, gas_left};
 }
@@ -92,8 +92,8 @@ Result sstore(StackTop stack, int64_t gas_left, ExecutionState& state) noexcept
     if (gas_left <= 2300)
         return {QRVMC_OUT_OF_GAS, gas_left};
 
-    const auto key = intx::be::store<qrvmc::bytes32>(stack.pop());
-    const auto value = intx::be::store<qrvmc::bytes32>(stack.pop());
+    const auto key = store_uint(stack.pop());
+    const auto value = store_uint(stack.pop());
 
     const auto gas_cost_cold =
         (state.host.access_storage(state.msg->recipient, key) == QRVMC_ACCESS_COLD) ?

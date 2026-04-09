@@ -27,17 +27,12 @@ namespace
 {
 CodeAnalysis::JumpdestMap analyze_jumpdests(bytes_view code)
 {
-    // To find if op is any PUSH opcode (OP_PUSH1 <= op <= OP_PUSH32)
-    // it can be noticed that OP_PUSH32 is INT8_MAX (0x7f) therefore
-    // static_cast<int8_t>(op) <= OP_PUSH32 is always true and can be skipped.
-    static_assert(OP_PUSH32 == std::numeric_limits<int8_t>::max());
-
     CodeAnalysis::JumpdestMap map(code.size());  // Allocate and init bitmap with zeros.
     for (size_t i = 0; i < code.size(); ++i)
     {
         const auto op = code[i];
-        if (static_cast<int8_t>(op) >= OP_PUSH1)  // If any PUSH opcode (see explanation above).
-            i += op - size_t{OP_PUSH1 - 1};       // Skip PUSH data.
+        if (op >= OP_PUSH1 && op <= OP_PUSH64)  // If any PUSH opcode (PUSH1..PUSH64).
+            i += op - size_t{OP_PUSH1 - 1};     // Skip PUSH data.
         else if (INTX_UNLIKELY(op == OP_JUMPDEST))
             map[i] = true;
     }
@@ -47,10 +42,10 @@ CodeAnalysis::JumpdestMap analyze_jumpdests(bytes_view code)
 
 std::unique_ptr<uint8_t[]> pad_code(bytes_view code)
 {
-    // We need at most 33 bytes of code padding: 32 for possible missing all data bytes of PUSH32
+    // We need at most 65 bytes of code padding: 64 for possible missing all data bytes of PUSH64
     // at the very end of the code; and one more byte for STOP to guarantee there is a terminating
     // instruction at the code end.
-    constexpr auto padding = 32 + 1;
+    constexpr auto padding = 64 + 1;
 
     // Using "raw" new operator instead of std::make_unique() to get uninitialized array.
     std::unique_ptr<uint8_t[]> padded_code{new uint8_t[code.size() + padding]};
@@ -91,7 +86,7 @@ namespace
 ///          or QRVMC_SUCCESS if everything is fine.
 template <Opcode Op>
 inline qrvmc_status_code check_requirements(const CostTable& cost_table, int64_t& gas_left,
-    const uint256* stack_top, const uint256* stack_bottom) noexcept
+    const uint512* stack_top, const uint512* stack_bottom) noexcept
 {
     static_assert(
         !instr::has_const_gas_cost(Op) || instr::gas_costs[QRVMC_ZOND][Op] != instr::undefined,
@@ -136,7 +131,7 @@ inline qrvmc_status_code check_requirements(const CostTable& cost_table, int64_t
 struct Position
 {
     code_iterator code_it;  ///< The position in the code.
-    uint256* stack_top;     ///< The pointer to the stack top.
+    uint512* stack_top;     ///< The pointer to the stack top.
 };
 
 /// Helpers for invoking instruction implementations of different signatures.
@@ -189,7 +184,7 @@ struct Position
 
 /// A helper to invoke the instruction implementation of the given opcode Op.
 template <Opcode Op>
-[[release_inline]] inline Position invoke(const CostTable& cost_table, const uint256* stack_bottom,
+[[release_inline]] inline Position invoke(const CostTable& cost_table, const uint512* stack_bottom,
     Position pos, int64_t& gas, ExecutionState& state) noexcept
 {
     if (const auto status = check_requirements<Op>(cost_table, gas, pos.stack_top, stack_bottom);

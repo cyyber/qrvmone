@@ -102,7 +102,7 @@ AdvancedCodeAnalysis analyze(qrvmc_revision rev, bytes_view code) noexcept
             // Current instruction will be final one in the block.
             while (code_pos != code_end && *code_pos != OP_JUMPDEST)
             {
-                if (*code_pos >= OP_PUSH1 && *code_pos <= OP_PUSH32)
+                if (*code_pos >= OP_PUSH1 && *code_pos <= OP_PUSH64)
                 {
                     const auto push_size = static_cast<size_t>(*code_pos - OP_PUSH1) + 1;
                     code_pos = std::min(code_pos + push_size + 1, code_end);

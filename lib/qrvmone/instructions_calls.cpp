@@ -12,7 +12,7 @@ Result call_impl(StackTop stack, int64_t gas_left, ExecutionState& state) noexce
     static_assert(Op == OP_CALL || Op == OP_DELEGATECALL || Op == OP_STATICCALL);
 
     const auto gas = stack.pop();
-    const auto dst = intx::be::trunc<qrvmc::address>(stack.pop());
+    const auto dst = trunc_to_addr(stack.pop());
     const auto value = (Op == OP_STATICCALL || Op == OP_DELEGATECALL) ? 0 : stack.pop();
     const auto has_value = value != 0;
     const auto input_offset_u256 = stack.pop();
@@ -48,7 +48,7 @@ Result call_impl(StackTop stack, int64_t gas_left, ExecutionState& state) noexce
     msg.code_address = dst;
     msg.sender = (Op == OP_DELEGATECALL) ? state.msg->sender : state.msg->recipient;
     msg.value =
-        (Op == OP_DELEGATECALL) ? state.msg->value : intx::be::store<qrvmc::uint256be>(value);
+        (Op == OP_DELEGATECALL) ? state.msg->value : store_uint(value);
 
     if (input_size > 0)
     {
@@ -86,7 +86,7 @@ Result call_impl(StackTop stack, int64_t gas_left, ExecutionState& state) noexce
     if (state.msg->depth >= 1024)
         return {QRVMC_SUCCESS, gas_left};  // "Light" failure.
 
-    if (has_value && intx::be::load<uint256>(state.host.get_balance(state.msg->recipient)) < value)
+    if (has_value && intx::be::load<uint512>(state.host.get_balance(state.msg->recipient)) < value)
         return {QRVMC_SUCCESS, gas_left};  // "Light" failure.
 
     const auto result = state.host.call(msg);
@@ -144,7 +144,7 @@ Result create_impl(StackTop stack, int64_t gas_left, ExecutionState& state) noex
         return {QRVMC_SUCCESS, gas_left};  // "Light" failure.
 
     if (endowment != 0 &&
-        intx::be::load<uint256>(state.host.get_balance(state.msg->recipient)) < endowment)
+        intx::be::load<uint512>(state.host.get_balance(state.msg->recipient)) < endowment)
         return {QRVMC_SUCCESS, gas_left};  // "Light" failure.
 
     auto msg = qrvmc_message{};
@@ -160,8 +160,8 @@ Result create_impl(StackTop stack, int64_t gas_left, ExecutionState& state) noex
     }
     msg.sender = state.msg->recipient;
     msg.depth = state.msg->depth + 1;
-    msg.create2_salt = intx::be::store<qrvmc::bytes32>(salt);
-    msg.value = intx::be::store<qrvmc::uint256be>(endowment);
+    msg.create2_salt = store_uint(salt);
+    msg.value = store_uint(endowment);
 
     const auto result = state.host.call(msg);
     gas_left -= msg.gas - result.gas_left;
@@ -169,7 +169,7 @@ Result create_impl(StackTop stack, int64_t gas_left, ExecutionState& state) noex
 
     state.return_data.assign(result.output_data, result.output_size);
     if (result.status_code == QRVMC_SUCCESS)
-        stack.top() = intx::be::load<uint256>(result.create_address);
+        stack.top() = load_uint_addr(result.create_address);
 
     return {QRVMC_SUCCESS, gas_left};
 }

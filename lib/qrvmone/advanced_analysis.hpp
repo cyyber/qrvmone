@@ -36,41 +36,41 @@ class Stack
 public:
     /// The pointer to the top item.
     /// This is never null.
-    uint256* top_item = nullptr;
+    uint512* top_item = nullptr;
 
 private:
     /// The pointer to the stack space "bottom".
-    uint256* m_bottom = nullptr;
+    uint512* m_bottom = nullptr;
 
 public:
     /// Init with the provided stack space.
-    explicit Stack(uint256* stack_space_bottom) noexcept { reset(stack_space_bottom); }
+    explicit Stack(uint512* stack_space_bottom) noexcept { reset(stack_space_bottom); }
 
     /// The current number of items on the stack.
     [[nodiscard]] int size() const noexcept { return static_cast<int>(top_item - m_bottom); }
 
     /// Returns the reference to the top item.
     // NOLINTNEXTLINE(readability-make-member-function-const)
-    [[nodiscard]] uint256& top() noexcept { return *top_item; }
+    [[nodiscard]] uint512& top() noexcept { return *top_item; }
 
     /// Returns the reference to the stack item on given position from the stack top.
     // NOLINTNEXTLINE(readability-make-member-function-const)
-    [[nodiscard]] uint256& operator[](int index) noexcept { return *(top_item - index); }
+    [[nodiscard]] uint512& operator[](int index) noexcept { return *(top_item - index); }
 
     /// Returns the const reference to the stack item on given position from the stack top.
-    [[nodiscard]] const uint256& operator[](int index) const noexcept
+    [[nodiscard]] const uint512& operator[](int index) const noexcept
     {
         return *(top_item - index);
     }
 
     /// Pushes an item on the stack. The stack limit is not checked.
-    void push(const uint256& item) noexcept { *++top_item = item; }
+    void push(const uint512& item) noexcept { *++top_item = item; }
 
     /// Returns an item popped from the top of the stack.
-    uint256 pop() noexcept { return *top_item--; }
+    uint512 pop() noexcept { return *top_item--; }
 
     /// Empties the stack by resetting the top item pointer to the new provided stack space.
-    void reset(uint256* stack_space_bottom) noexcept
+    void reset(uint512* stack_space_bottom) noexcept
     {
         m_bottom = stack_space_bottom;
         top_item = m_bottom;
@@ -121,7 +121,7 @@ struct AdvancedExecutionState : ExecutionState
 union InstructionArgument
 {
     int64_t number;
-    const intx::uint256* push_value;
+    const intx::uint<512>* push_value;
     uint64_t small_push_value;
     BlockInfo block{};
 };
@@ -168,7 +168,7 @@ struct AdvancedCodeAnalysis
     std::vector<Instruction> instrs;
 
     /// Storage for large push values.
-    std::vector<intx::uint256> push_values;
+    std::vector<intx::uint<512>> push_values;
 
     /// The offsets of JUMPDESTs in the original code.
     /// These are values that JUMP/JUMPI receives as an argument.

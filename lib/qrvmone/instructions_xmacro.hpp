@@ -167,6 +167,39 @@
     ON_OPCODE_IDENTIFIER(OP_PUSH30, push<30>)               \
     ON_OPCODE_IDENTIFIER(OP_PUSH31, push<31>)               \
     ON_OPCODE_IDENTIFIER(OP_PUSH32, push<32>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH33, push<33>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH34, push<34>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH35, push<35>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH36, push<36>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH37, push<37>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH38, push<38>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH39, push<39>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH40, push<40>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH41, push<41>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH42, push<42>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH43, push<43>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH44, push<44>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH45, push<45>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH46, push<46>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH47, push<47>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH48, push<48>)               \
+                                                            \
+    ON_OPCODE_IDENTIFIER(OP_PUSH49, push<49>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH50, push<50>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH51, push<51>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH52, push<52>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH53, push<53>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH54, push<54>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH55, push<55>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH56, push<56>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH57, push<57>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH58, push<58>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH59, push<59>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH60, push<60>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH61, push<61>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH62, push<62>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH63, push<63>)               \
+    ON_OPCODE_IDENTIFIER(OP_PUSH64, push<64>)               \
                                                             \
     ON_OPCODE_IDENTIFIER(OP_DUP1, dup<1>)                   \
     ON_OPCODE_IDENTIFIER(OP_DUP2, dup<2>)                   \
@@ -207,40 +240,6 @@
     ON_OPCODE_IDENTIFIER(OP_LOG2, log<2>)                   \
     ON_OPCODE_IDENTIFIER(OP_LOG3, log<3>)                   \
     ON_OPCODE_IDENTIFIER(OP_LOG4, log<4>)                   \
-    ON_OPCODE_UNDEFINED(0xa5)                               \
-    ON_OPCODE_UNDEFINED(0xa6)                               \
-    ON_OPCODE_UNDEFINED(0xa7)                               \
-    ON_OPCODE_UNDEFINED(0xa8)                               \
-    ON_OPCODE_UNDEFINED(0xa9)                               \
-    ON_OPCODE_UNDEFINED(0xaa)                               \
-    ON_OPCODE_UNDEFINED(0xab)                               \
-    ON_OPCODE_UNDEFINED(0xac)                               \
-    ON_OPCODE_UNDEFINED(0xad)                               \
-    ON_OPCODE_UNDEFINED(0xae)                               \
-    ON_OPCODE_UNDEFINED(0xaf)                               \
-                                                            \
-    ON_OPCODE_UNDEFINED(0xb0)                               \
-    ON_OPCODE_UNDEFINED(0xb1)                               \
-    ON_OPCODE_UNDEFINED(0xb2)                               \
-    ON_OPCODE_UNDEFINED(0xb3)                               \
-    ON_OPCODE_UNDEFINED(0xb4)                               \
-    ON_OPCODE_UNDEFINED(0xb5)                               \
-    ON_OPCODE_UNDEFINED(0xb6)                               \
-    ON_OPCODE_UNDEFINED(0xb7)                               \
-    ON_OPCODE_UNDEFINED(0xb8)                               \
-    ON_OPCODE_UNDEFINED(0xb9)                               \
-    ON_OPCODE_UNDEFINED(0xba)                               \
-    ON_OPCODE_UNDEFINED(0xbb)                               \
-    ON_OPCODE_UNDEFINED(0xbc)                               \
-    ON_OPCODE_UNDEFINED(0xbd)                               \
-    ON_OPCODE_UNDEFINED(0xbe)                               \
-    ON_OPCODE_UNDEFINED(0xbf)                               \
-                                                            \
-    ON_OPCODE_UNDEFINED(0xc0)                               \
-    ON_OPCODE_UNDEFINED(0xc1)                               \
-    ON_OPCODE_UNDEFINED(0xc2)                               \
-    ON_OPCODE_UNDEFINED(0xc3)                               \
-    ON_OPCODE_UNDEFINED(0xc4)                               \
     ON_OPCODE_UNDEFINED(0xc5)                               \
     ON_OPCODE_UNDEFINED(0xc6)                               \
     ON_OPCODE_UNDEFINED(0xc7)                               \
