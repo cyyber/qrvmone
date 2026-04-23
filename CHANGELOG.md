@@ -4,3 +4,47 @@ Documentation of all notable changes to the **qrvmone** project.
 
 The format is based on [Keep a Changelog],
 and this project adheres to [Semantic Versioning].
+
+## [0.11.0] — 2026-04-23
+
+### Breaking changes
+
+Release aligned to the QRVMC v2.0.0 ABI, which widens the VM word to
+512 bits and the QRL address to 48 bytes for the Zond network.
+
+- Stack slot is now `uint512` (512-bit big-endian integers on the
+  interpreter stack).
+- `qrvmc_bytes32` is 64 bytes wide (wire-level value for SSTORE/SLOAD
+  values, log topics, `qrvmc_message.create2_salt`, block/transaction
+  context fields).
+- `qrvmc_address` is 48 bytes wide (ML-DSA-87 QRL address layout).
+- New opcodes `PUSH33`..`PUSH64` at `0x80`..`0x9f`.
+- `DUP1`..`DUP16` shifted from `0x80`..`0x8f` to `0xa0`..`0xaf`.
+- `SWAP1`..`SWAP16` shifted from `0x90`..`0x9f` to `0xb0`..`0xbf`.
+- `LOG0`..`LOG4` shifted from `0xa0`..`0xa4` to `0xc0`..`0xc4`.
+- `MLOAD`/`MSTORE` now read/write 64 bytes per word.
+- `CALLDATALOAD` reads 64 bytes and zero-pads on short input.
+- `BYTE`/`SIGNEXTEND` index 64-byte words (valid range 0..63).
+- Generic `addmod`/`mulmod` implementations for `uint512` operands
+  (intx only provides native `uint256` specialisations).
+
+### Fixed
+
+- `CREATE2` salt default widened from `uint256{}` to `uint512{}` to
+  match the widened stack slot and avoid a mixed-width ternary that
+  could silently drop the upper 256 bits if intx conversion rules
+  ever shift.
+- Dead `load_uint<T>` helper removed; it incorrectly narrowed any
+  `qrvmc_bytes32` source via `intx::be::load<uint256>`, which would
+  drop the upper 32 bytes of the new 64-byte values.
+
+### Notes
+
+- `QRVMONE_TESTING=ON` requires the `qrvmc-vmtester` tool, which is
+  not installed by the bundled qrvmc package. Ship tests stay off in
+  release builds until that dependency is resolved.
+
+[0.11.0]: https://github.com/adamtka42/qrvmone/compare/64-byte-word
+
+[Keep a Changelog]: https://keepachangelog.com
+[Semantic Versioning]: https://semver.org
