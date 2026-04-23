@@ -29,15 +29,6 @@ inline constexpr intx::uint<N> mulmod(const intx::uint<N>& x, const intx::uint<N
     return intx::udivrem(intx::umul(x, y), mod).rem;
 }
 
-/// Load a value from a qrvmc type as right-aligned uint512 (for uint/address/balance).
-/// intx::be::load produces left-aligned values; this shifts them right.
-template <typename T>
-inline uint512 load_uint(const T& src) noexcept
-{
-    // be::load puts bytes at MSB (left-aligned). We want right-aligned.
-    return uint512(intx::be::load<uint256>(src));
-}
-
 /// Special case: load from qrvmc_address (48 bytes) as right-aligned uint512
 inline uint512 load_uint_addr(const qrvmc_address& src) noexcept
 {
@@ -287,7 +278,7 @@ inline void signextend(StackTop stack) noexcept
 
     if (ext < 63)  // For 63 we also don't need to do anything.
     {
-        const auto e = ext[0];  // uint256 -> uint64.
+        const auto e = ext[0];  // uint512 -> uint64 (the low 64-bit limb).
         const auto sign_word_index =
             static_cast<size_t>(e / sizeof(e));      // Index of the word with the sign bit.
         const auto sign_byte_index = e % sizeof(e);  // Index of the sign byte in the sign word.
