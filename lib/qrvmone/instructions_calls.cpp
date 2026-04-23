@@ -121,7 +121,12 @@ Result create_impl(StackTop stack, int64_t gas_left, ExecutionState& state) noex
     const auto endowment = stack.pop();
     const auto init_code_offset_u256 = stack.pop();
     const auto init_code_size_u256 = stack.pop();
-    const auto salt = (Op == OP_CREATE2) ? stack.pop() : uint256{};
+    // Salt is only consumed by CREATE2. Stack slots are 512-bit (uint512)
+    // post 64-byte-word migration, so the default for the CREATE path must
+    // match that width — otherwise the ternary mixes uint256/uint512 and
+    // silently drops the upper half on the CREATE2 path if the implicit
+    // conversion ever flips direction.
+    const auto salt = (Op == OP_CREATE2) ? stack.pop() : uint512{};
 
     stack.push(0);  // Assume failure.
     state.return_data.clear();
