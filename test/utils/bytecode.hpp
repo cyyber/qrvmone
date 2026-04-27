@@ -225,7 +225,11 @@ inline bytecode ret(bytecode index, bytecode size)
 
 inline bytecode ret_top()
 {
-    return mstore(0) + ret(0, 0x20);
+    // After the 64-byte-word migration MSTORE writes a full 64-byte slot,
+    // with scalar values landing right-aligned in memory[32:64]. Returning
+    // the low 32 bytes surfaces a 256-bit integer in the classic on-the-
+    // wire format for test assertions (EXPECT_OUTPUT_INT et al.).
+    return mstore(0) + ret(0x20, 0x20);
 }
 
 inline bytecode ret(bytecode c)

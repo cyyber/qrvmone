@@ -20,10 +20,19 @@
     EXPECT_EQ(result.status_code, STATUS_CODE); \
     EXPECT_EQ(gas_used, GAS_USED)
 
-#define EXPECT_OUTPUT_INT(X)                                 \
-    ASSERT_EQ(result.output_size, sizeof(intx::uint256));    \
-    EXPECT_EQ(hex({result.output_data, result.output_size}), \
-        hex({intx::be::store<qrvmc_bytes32>(intx::uint256{X}).bytes, sizeof(qrvmc_bytes32)}))
+// Compare the 32-byte `result.output_data` against a big-endian uint256
+// encoding of X. With the 64-byte-word migration `qrvmc_bytes32` is 64
+// bytes wide, which can't accept an intx uint256 store; stage the
+// uint256 into a local 32-byte buffer instead.
+#define EXPECT_OUTPUT_INT(X)                                                      \
+    ASSERT_EQ(result.output_size, sizeof(intx::uint256));                         \
+    do                                                                            \
+    {                                                                             \
+        uint8_t _expected_be[sizeof(intx::uint256)] = {};                         \
+        intx::be::store(_expected_be, intx::uint256{X});                          \
+        EXPECT_EQ(hex({result.output_data, result.output_size}),                  \
+            hex({_expected_be, sizeof(_expected_be)}));                           \
+    } while (false)
 
 
 namespace qrvmone::test

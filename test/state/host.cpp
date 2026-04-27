@@ -70,7 +70,7 @@ qrvmc_storage_status Host::set_storage(
 uint256be Host::get_balance(const address& addr) const noexcept
 {
     const auto* const acc = m_state.find(addr);
-    return (acc != nullptr) ? intx::be::store<uint256be>(acc->balance) : uint256be{};
+    return (acc != nullptr) ? to_be256(acc->balance) : uint256be{};
 }
 
 size_t Host::get_code_size(const address& addr) const noexcept
@@ -97,30 +97,46 @@ size_t Host::copy_code(const address& addr, size_t code_offset, uint8_t* buffer_
     return num_bytes;
 }
 
+// ADR-004 (48-byte Zond address derivation, option B+): the new account
+// address is the low 48 bytes of Keccak-512("QRL-ADDR-v1" || data). For
+// CREATE, data is rlp(sender, nonce); for CREATE2, data is
+// 0xff || sender || salt || keccak256(init_code). The mock host mirrors
+// the on-chain go-qrl derivation so cross-VM state tests hash to the
+// same addresses under the widened layout.
 address compute_new_account_address(const address& sender, uint64_t sender_nonce,
     const std::optional<bytes32>& salt, bytes_view init_code) noexcept
 {
-    hash256 addr_base_hash;
+    static constexpr char kDomain[] = "QRL-ADDR-v1";
+    static constexpr size_t kDomainLen = sizeof(kDomain) - 1;  // exclude NUL
+
+    bytes data;
     if (!salt.has_value())  // CREATE
     {
-        // TODO: Compute CREATE address without using RLP library.
-        const auto rlp_list = rlp::encode_tuple(sender, sender_nonce);
-        addr_base_hash = keccak256(rlp_list);
+        // TODO: Compute CREATE data without using RLP library.
+        data = rlp::encode_tuple(sender, sender_nonce);
     }
     else  // CREATE2
     {
         const auto init_code_hash = keccak256(init_code);
-        uint8_t buffer[1 + sizeof(sender) + sizeof(*salt) + sizeof(init_code_hash)];
-        static_assert(std::size(buffer) == 85);
-        buffer[0] = 0xff;
-        std::copy_n(sender.bytes, sizeof(sender), &buffer[1]);
-        std::copy_n(salt->bytes, sizeof(salt->bytes), &buffer[1 + sizeof(sender)]);
-        std::copy_n(init_code_hash.bytes, sizeof(init_code_hash),
-            &buffer[1 + sizeof(sender) + sizeof(salt->bytes)]);
-        addr_base_hash = keccak256({buffer, std::size(buffer)});
+        data.reserve(1 + sizeof(sender) + sizeof(*salt) + sizeof(init_code_hash));
+        data.push_back(uint8_t{0xff});
+        data.insert(data.end(), sender.bytes, sender.bytes + sizeof(sender));
+        data.insert(data.end(), salt->bytes, salt->bytes + sizeof(salt->bytes));
+        data.insert(data.end(), init_code_hash.bytes,
+            init_code_hash.bytes + sizeof(init_code_hash));
     }
+
+    bytes hashed_input;
+    hashed_input.reserve(kDomainLen + data.size());
+    hashed_input.insert(hashed_input.end(), kDomain, kDomain + kDomainLen);
+    hashed_input.insert(hashed_input.end(), data.begin(), data.end());
+
+    const auto h512 = ethash::keccak512(hashed_input.data(), hashed_input.size());
     qrvmc_address new_addr{};
-    std::copy_n(&addr_base_hash.bytes[12], sizeof(new_addr), new_addr.bytes);
+    static_assert(sizeof(h512.bytes) == 64 && sizeof(new_addr.bytes) == 48,
+        "Keccak-512 is 64 bytes, QRL address is 48 bytes — "
+        "taking the low 48 bytes yields the ADR-004 address.");
+    std::copy_n(h512.bytes + 16, sizeof(new_addr.bytes), new_addr.bytes);
     return new_addr;
 }
 
@@ -174,7 +190,7 @@ qrvmc::Result Host::create(const qrvmc_message& msg) noexcept
         v = StorageValue{.access_status = v.access_status};
 
     auto& sender_acc = m_state.get(msg.sender);  // TODO: Duplicated account lookup.
-    const auto value = intx::be::load<intx::uint256>(msg.value);
+    const auto value = from_be256(msg.value);
     assert(sender_acc.balance >= value && "QRVM must guarantee balance");
     sender_acc.balance -= value;
     new_acc.balance += value;  // The new account may be prefunded.
@@ -226,7 +242,7 @@ qrvmc::Result Host::execute_message(const qrvmc_message& msg) noexcept
     if (msg.kind == QRVMC_CALL)
     {
         // Transfer value.
-        const auto value = intx::be::load<intx::uint256>(msg.value);
+        const auto value = from_be256(msg.value);
         assert(m_state.get(msg.sender).balance >= value);
         m_state.get(msg.sender).balance -= value;
         dst_acc->balance += value;
@@ -277,7 +293,7 @@ qrvmc_tx_context Host::get_tx_context() const noexcept
     const auto effective_gas_price = m_block.base_fee + priority_gas_price;
 
     return qrvmc_tx_context{
-        intx::be::store<uint256be>(effective_gas_price),  // By EIP-1559.
+        to_be256(effective_gas_price),  // By EIP-1559.
         m_tx.sender,
         m_block.coinbase,
         m_block.number,
@@ -285,7 +301,7 @@ qrvmc_tx_context Host::get_tx_context() const noexcept
         m_block.gas_limit,
         m_block.prev_randao,
         0x01_bytes32,  // Chain ID is expected to be 1.
-        uint256be{m_block.base_fee},
+        to_be256(m_block.base_fee),
     };
 }
 
