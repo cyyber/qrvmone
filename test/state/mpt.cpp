@@ -12,10 +12,16 @@ namespace qrvmone::state
 namespace
 {
 /// The collection of nibbles (4-bit values) representing a path in a MPT.
+///
+/// Trie keys are typically Keccak-256 hashes wrapped in the post-migration
+/// 64-byte bytes32 container (32-byte hash in the low half, upper half
+/// zeroed), so each key is 64 bytes wide and produces 128 nibbles. Sizing
+/// the inline buffer at 128 leaves enough headroom for any current call
+/// site without dropping back to a heap allocation.
 struct Path
 {
     size_t length = 0;  // TODO: Can be converted to uint8_t.
-    uint8_t nibbles[64]{};
+    uint8_t nibbles[128]{};
 
     Path() = default;
 
@@ -245,7 +251,13 @@ hash256 MPTNode::hash() const  // NOLINT(misc-no-recursion)
             if (m_children[i])
             {
                 children_hashes[i] = m_children[i]->hash();
-                children_hash_bytes[i] = children_hashes[i];
+                // After the 64-byte VM-word migration hash256 is 64 bytes
+                // wide, but the MPT spec stores 32-byte child hashes inside
+                // branch nodes. Slice to the low 32 bytes (the meaningful
+                // keccak output) so RLP-encoded branches stay
+                // Ethereum-compatible.
+                children_hash_bytes[i] =
+                    bytes_view{children_hashes[i].bytes + 32, 32};
             }
         }
 
@@ -253,7 +265,11 @@ hash256 MPTNode::hash() const  // NOLINT(misc-no-recursion)
     }
     case Kind::ext:
     {
-        return keccak256(rlp::encode_tuple(m_path.encode(true), m_children[0]->hash()));
+        // Slice the child hash to its 32-byte low half for the same reason
+        // as the branch case above.
+        const auto child_hash = m_children[0]->hash();
+        return keccak256(rlp::encode_tuple(
+            m_path.encode(true), bytes_view{child_hash.bytes + 32, 32}));
     }
     }
 

@@ -10,7 +10,10 @@ using namespace qrvmone::test;
 
 TEST_F(state_transition, create2_factory)
 {
-    static constexpr auto create_address = "Qfd8e7707356349027a32d71eabc7cb0cf9d7cbb4"_address;
+    // Expected address regenerated post-migration: 48-byte addresses derived
+    // via Keccak-512 of (0xff || sender || salt || keccak512(initcode)).
+    static constexpr auto create_address =
+        "Q20ccafb9c985640c3a81f1a53f4e165b91bf5fd6637e8cc03b9b370ca22cdd49277a12d8198d1464e8cf95b6560f5d2b"_address;
 
     const auto factory_code =
         calldatacopy(0, 0, calldatasize()) + create2().input(0, calldatasize());
@@ -26,7 +29,10 @@ TEST_F(state_transition, create2_factory)
 
 TEST_F(state_transition, create_tx)
 {
-    static constexpr auto create_address = "Q3442a1dec1e72f337007125aa67221498cdd759d"_address;
+    // Expected address regenerated post-migration: 48-byte addresses derived
+    // via Keccak-512(rlp(sender, nonce)).
+    static constexpr auto create_address =
+        "Q1042769a81a2aa6583882f886c74339b6271a43253dfb7b6c07d3c09e88fa4970ae5116bb2093c154784cbd9dfa1a8fe"_address;
 
     tx.data = mstore8(0, push(0xFE)) + ret(0, 1);
 
