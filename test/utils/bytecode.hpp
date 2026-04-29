@@ -90,11 +90,16 @@ big_endian(T value)
     return {static_cast<uint8_t>(value >> 8), static_cast<uint8_t>(value)};
 }
 
+// 64-byte VM: PUSH1..PUSH64 occupy 0x60..0x9F. The new PUSH33..PUSH64 opcodes
+// are not named in the qrvmc header yet, so encode them by arithmetic on
+// OP_PUSH1: PUSHn opcode = 0x60 + (n-1). The maximum push width is 64 bytes.
+inline constexpr std::size_t kMaxPushSize = 64;
+
 inline bytecode push(bytes_view data)
 {
     if (data.empty())
         throw std::invalid_argument{"push data empty"};
-    if (data.size() > (OP_PUSH32 - OP_PUSH1 + 1))
+    if (data.size() > kMaxPushSize)
         throw std::invalid_argument{"push data too long"};
     return Opcode(data.size() + OP_PUSH1 - 1) + bytes{data};
 }
@@ -115,7 +120,8 @@ bytecode push(Opcode opcode) = delete;
 
 inline bytecode push(Opcode opcode, const bytecode& data)
 {
-    if (opcode < OP_PUSH1 || opcode > OP_PUSH32)
+    const auto last_push = OP_PUSH1 + kMaxPushSize - 1;
+    if (opcode < OP_PUSH1 || opcode > last_push)
         throw std::invalid_argument{"invalid push opcode " + std::to_string(opcode)};
 
     const auto num_instr_bytes = static_cast<size_t>(opcode) - OP_PUSH1 + 1;
@@ -140,7 +146,9 @@ inline bytecode push(uint64_t n)
 inline bytecode push(qrvmc::bytes32 bs)
 {
     bytes_view data{bs.bytes, sizeof(bs.bytes)};
-    return push(data.substr(std::min(data.find_first_not_of(uint8_t{0}), size_t{31})));
+    // Trim leading zeros down to the smallest PUSHn that still fits the value.
+    // Cap the trim at sizeof(bytes32)-1 so an all-zero value still emits PUSH1 0.
+    return push(data.substr(std::min(data.find_first_not_of(uint8_t{0}), sizeof(bs.bytes) - 1)));
 }
 
 inline bytecode push(qrvmc::address addr)
@@ -406,7 +414,7 @@ inline std::string decode(bytes_view bytecode)
         {
             s += std::string{" + OP_"} + name;
 
-            if (opcode >= OP_PUSH1 && opcode <= OP_PUSH32)
+            if (opcode >= OP_PUSH1 && opcode < OP_PUSH1 + static_cast<int>(kMaxPushSize))
             {
                 const auto push_data_start = it + 1;
                 const auto push_data_size =
