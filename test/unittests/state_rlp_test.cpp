@@ -219,8 +219,8 @@ TEST(state_rlp, tx_to_rlp_eip1559)
     tx.gas_limit = 30000;
     tx.max_gas_price = 14237787676;
     tx.max_priority_gas_price = 0;
-    tx.sender = "Q20a1a68e6818a1142f85671db01ef7226debf822"_address;
-    tx.to = "Q535b918f3724001fd6fb52fcc6cbc220592990a3"_address;
+    tx.sender = "Q0000000000000000000000000000000000000000000000000000000020a1a68e6818a1142f85671db01ef7226debf822"_address;
+    tx.to = "Q00000000000000000000000000000000000000000000000000000000535b918f3724001fd6fb52fcc6cbc220592990a3"_address;
     tx.value = 73360267083380739_u256;
     tx.access_list = {};
     tx.nonce = 132949;
@@ -251,8 +251,8 @@ TEST(state_rlp, tx_to_rlp_eip1559_with_data)
     tx.gas_limit = 53319;
     tx.max_gas_price = 14358031378;
     tx.max_priority_gas_price = 576312105;
-    tx.sender = "Q20a1a68e6818a1142f85671db01ef7226debf822"_address;
-    tx.to = "Qc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"_address;
+    tx.sender = "Q0000000000000000000000000000000000000000000000000000000020a1a68e6818a1142f85671db01ef7226debf822"_address;
+    tx.to = "Q00000000000000000000000000000000000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"_address;
     tx.value = 0;
     tx.access_list = {};
     tx.nonce = 47;
@@ -280,10 +280,10 @@ TEST(state_rlp, tx_to_rlp_eip1559_with_non_empty_access_list)
     tx.gas_limit = 0x3d0900;
     tx.max_gas_price = 0x7d0;
     tx.max_priority_gas_price = 0xa;
-    tx.sender = "Q20a1a68e6818a1142f85671db01ef7226debf822"_address;
-    tx.to = "Qcccccccccccccccccccccccccccccccccccccccc"_address;
+    tx.sender = "Q0000000000000000000000000000000000000000000000000000000020a1a68e6818a1142f85671db01ef7226debf822"_address;
+    tx.to = "Q00000000000000000000000000000000000000000000000000000000cccccccccccccccccccccccccccccccccccccccc"_address;
     tx.value = 0;
-    tx.access_list = {{"Qcccccccccccccccccccccccccccccccccccccccc"_address,
+    tx.access_list = {{"Q00000000000000000000000000000000000000000000000000000000cccccccccccccccccccccccccccccccccccccccc"_address,
         {0x0000000000000000000000000000000000000000000000000000000000000000_bytes32,
             0x0000000000000000000000000000000000000000000000000000000000000001_bytes32}}};
     tx.nonce = 1;

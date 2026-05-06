@@ -11,7 +11,7 @@ inline constexpr auto addr = qrvmone::state::compute_new_account_address;
 
 inline constexpr uint64_t nonces[] = {0, 1, 0x80, 0xffffffffffffffff};
 inline constexpr address senders[] = {
-    "Q00"_address, "Q01"_address, "Q8000000000000000000000000000000000000000"_address};
+    "Q00"_address, "Q01"_address, "Q000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000"_address};
 inline const bytes init_codes[] = {bytes{}, bytes{0xFE}};
 inline constexpr bytes32 salts[] = {
     0x00_bytes32, 0xe75fb554e433e03763a1560646ee22dcb74e5274b34c5ad644e7c0f619a7e1d0_bytes32};
@@ -47,7 +47,7 @@ TEST(state_new_account_address, create)
             "Q4b0dd9027ae245110a2ca01ac458a1a8e8e4e156648ee6b89ff0266b923f7811f2e4f98906f3c0a0804610c75010a457"_address);
 
         const auto beacon_deposit_address =
-            addr("Qb20a608c624Ca5003905aA834De7156C68b2E1d0"_address, 0, {}, ic);
+            addr("Q00000000000000000000000000000000000000000000000000000000b20a608c624Ca5003905aA834De7156C68b2E1d0"_address, 0, {}, ic);
         EXPECT_EQ(beacon_deposit_address,
             "Qa89f8b7459b02d26903258d821dee88a8a6df180775e8f59022a183f4ea1c6a68e32fcc1afedc8172c523f796c0dc187"_address);
     }

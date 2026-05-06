@@ -40,7 +40,7 @@ TEST(state_mpt, single_account_v1)
     constexpr auto expected =
         0xda1e4b94058b813e847ba099a37c0e28ad090aad6b8f8964d1da24ccad28d0af_bytes32;
 
-    constexpr auto addr = "Q0000000000000000000000000000000000000002"_address;
+    constexpr auto addr = "Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002"_address;
     constexpr uint64_t nonce = 0;
     constexpr auto balance = 1_u256;
     constexpr auto storage_hash = emptyMPTHash;

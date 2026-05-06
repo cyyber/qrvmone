@@ -79,7 +79,7 @@ TEST_P(qrvm, create)
     auto call_output = bytes{0xa, 0xb, 0xc};
     host.call_result.output_data = call_output.data();
     host.call_result.output_size = call_output.size();
-    host.call_result.create_address = "Qcc010203040506070809010203040506070809ce"_address;
+    host.call_result.create_address = "Q00000000000000000000000000000000000000000000000000000000cc010203040506070809010203040506070809ce"_address;
     host.call_result.gas_left = 200000;
     execute(300000, sstore(1, create().value(1).input(0, 0x20)));
 
@@ -121,7 +121,7 @@ TEST_P(qrvm, create2)
     const bytes call_output{0xa, 0xb, 0xc};
     host.call_result.output_data = call_output.data();
     host.call_result.output_size = call_output.size();
-    host.call_result.create_address = "Qc2010203040506070809010203040506070809ce"_address;
+    host.call_result.create_address = "Q00000000000000000000000000000000000000000000000000000000c2010203040506070809010203040506070809ce"_address;
     host.call_result.gas_left = 200000;
     execute(300000, sstore(1, create2().value(1).input(0, 0x41).salt(0x5a)));
     EXPECT_GAS_USED(QRVMC_SUCCESS, 117917);
@@ -170,7 +170,7 @@ TEST_P(qrvm, create_balance_too_low)
 
 TEST_P(qrvm, create_failure)
 {
-    host.call_result.create_address = "Q00000000000000000000000000000000000000ce"_address;
+    host.call_result.create_address = "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ce"_address;
     const auto create_address =
         bytes_view{host.call_result.create_address.bytes, sizeof(host.call_result.create_address)};
     rev = QRVMC_ZOND;
@@ -207,7 +207,7 @@ TEST_P(qrvm, create_failure)
 
 TEST_P(qrvm, call_failing_with_value)
 {
-    host.accounts["Q00000000000000000000000000000000000000aa"_address] = {};
+    host.accounts["Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aa"_address] = {};
     for (auto op : {OP_CALL})
     {
         const auto code = push(0xff) + push(0) + OP_DUP2 + OP_DUP2 + push(1) + push(0xaa) +
@@ -234,8 +234,8 @@ TEST_P(qrvm, call_with_value)
 {
     constexpr auto code = "60ff600060ff6000600160aa618000f150";
 
-    constexpr auto call_sender = "Q5e4d00000000000000000000000000000000d4e5"_address;
-    constexpr auto call_dst = "Q00000000000000000000000000000000000000aa"_address;
+    constexpr auto call_sender = "Q000000000000000000000000000000000000000000000000000000005e4d00000000000000000000000000000000d4e5"_address;
+    constexpr auto call_dst = "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aa"_address;
 
     msg.recipient = call_sender;
     host.accounts[msg.recipient].set_balance(1);
@@ -350,14 +350,14 @@ TEST_P(qrvm, call_value_zero_to_nonexistent_account)
     EXPECT_EQ(call_msg.depth, 1);
     EXPECT_EQ(call_msg.gas, 6000);
     EXPECT_EQ(call_msg.input_size, 64);
-    EXPECT_EQ(call_msg.recipient, "Q00000000000000000000000000000000000000aa"_address);
+    EXPECT_EQ(call_msg.recipient, "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aa"_address);
     EXPECT_EQ(call_msg.value.bytes[31], 0);
 }
 
 TEST_P(qrvm, call_new_account_creation_cost)
 {
-    constexpr auto call_dst = "Q00000000000000000000000000000000000000ad"_address;
-    constexpr auto msg_dst = "Q0000000000000000000000000000000000000003"_address;
+    constexpr auto call_dst = "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ad"_address;
+    constexpr auto msg_dst = "Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003"_address;
     const auto code =
         4 * push(0) + calldataload(0) + push(call_dst) + push(0) + OP_CALL + ret_top();
     msg.recipient = msg_dst;
@@ -467,7 +467,7 @@ TEST_P(qrvm, staticcall_input)
 TEST_P(qrvm, call_with_value_low_gas)
 {
     // Create the call destination account.
-    host.accounts["Q0000000000000000000000000000000000000000"_address] = {};
+    host.accounts["Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"_address] = {};
     for (auto call_op : {OP_CALL})
     {
         auto code = 4 * push(0) + push(1) + 2 * push(0) + call_op + OP_POP;
@@ -481,7 +481,7 @@ TEST_P(qrvm, call_with_value_low_gas)
 TEST_P(qrvm, call_oog_after_depth_check)
 {
     // Create the call recipient account.
-    host.accounts["Q0000000000000000000000000000000000000000"_address] = {};
+    host.accounts["Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"_address] = {};
     msg.depth = 1024;
 
     for (auto op : {OP_CALL, OP_CALLCODE})
@@ -503,9 +503,9 @@ TEST_P(qrvm, call_oog_after_depth_check)
 
 TEST_P(qrvm, call_recipient_and_code_address)
 {
-    constexpr auto origin = "Q9900000000000000000000000000000000000099"_address;
-    constexpr auto executor = "Qee000000000000000000000000000000000000ee"_address;
-    constexpr auto recipient = "Q4400000000000000000000000000000000000044"_address;
+    constexpr auto origin = "Q000000000000000000000000000000000000000000000000000000009900000000000000000000000000000000000099"_address;
+    constexpr auto executor = "Q00000000000000000000000000000000000000000000000000000000ee000000000000000000000000000000000000ee"_address;
+    constexpr auto recipient = "Q000000000000000000000000000000000000000000000000000000004400000000000000000000000000000000000044"_address;
 
     msg.sender = origin;
     msg.recipient = executor;
@@ -526,9 +526,9 @@ TEST_P(qrvm, call_recipient_and_code_address)
 
 TEST_P(qrvm, call_value)
 {
-    constexpr auto origin = "Q9900000000000000000000000000000000000099"_address;
-    constexpr auto executor = "Qee000000000000000000000000000000000000ee"_address;
-    constexpr auto recipient = "Q4400000000000000000000000000000000000044"_address;
+    constexpr auto origin = "Q000000000000000000000000000000000000000000000000000000009900000000000000000000000000000000000099"_address;
+    constexpr auto executor = "Q00000000000000000000000000000000000000000000000000000000ee000000000000000000000000000000000000ee"_address;
+    constexpr auto recipient = "Q000000000000000000000000000000000000000000000000000000004400000000000000000000000000000000000044"_address;
 
     constexpr auto passed_value = 3;
     constexpr auto origin_value = 8;

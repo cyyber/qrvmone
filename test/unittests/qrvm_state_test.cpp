@@ -229,7 +229,7 @@ TEST_P(qrvm, blockhash)
 
 TEST_P(qrvm, extcode)
 {
-    constexpr auto addr = "Qfffffffffffffffffffffffffffffffffffffffe"_address;
+    constexpr auto addr = "Q00000000000000000000000000000000000000000000000000000000fffffffffffffffffffffffffffffffffffffffe"_address;
     host.accounts[addr].code = {'a', 'b', 'c', 'd'};
 
     bytecode code;
@@ -249,7 +249,7 @@ TEST_P(qrvm, extcode)
 
 TEST_P(qrvm, extcodesize)
 {
-    constexpr auto addr = "Q0000000000000000000000000000000000000002"_address;
+    constexpr auto addr = "Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002"_address;
     host.accounts[addr].code = {'\0'};
     execute(push(2) + OP_EXTCODESIZE + ret_top());
     EXPECT_OUTPUT_INT(1);
@@ -313,7 +313,7 @@ TEST_P(qrvm, extcodecopy_memory_cost)
 
 TEST_P(qrvm, extcodecopy_nonzero_index)
 {
-    constexpr auto addr = "Q000000000000000000000000000000000000000a"_address;
+    constexpr auto addr = "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a"_address;
     constexpr auto index = 15;
 
     auto& extcode = host.accounts[addr].code;
