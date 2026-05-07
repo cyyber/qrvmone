@@ -495,7 +495,7 @@ TEST_P(qrvm, inner_invalid)
 TEST_P(qrvm, keccak256)
 {
     execute(push(0x0800) + push(0x03ff) + OP_KECCAK256 + ret_top());
-    EXPECT_GAS_USED(QRVMC_SUCCESS, 738);
+    EXPECT_GAS_USED(QRVMC_SUCCESS, 388);
     EXPECT_OUTPUT_INT(0xaeffb38c06e111d84216396baefeb7fed397f303d5cb84a33f1e8b485c4a22da_u256);
 }
 

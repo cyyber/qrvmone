@@ -411,8 +411,10 @@ inline Result keccak256(StackTop stack, int64_t gas_left, ExecutionState& state)
         return {QRVMC_OUT_OF_GAS, gas_left};
 
     auto data = s != 0 ? &state.memory[i] : nullptr;
-    // Left-align hash in 512-bit word (bytes32 is left-aligned)
-    size = uint512(intx::be::load<uint256>(ethash::keccak256(data, s))) << 256;
+    // KECCAK256 is an opcode-level 256-bit hash result. Keep it right-aligned
+    // in the 512-bit stack word; high-level fixed-bytes codegen left-aligns it
+    // when the Hyperion type is bytes32.
+    size = uint512(intx::be::load<uint256>(ethash::keccak256(data, s)));
     return {QRVMC_SUCCESS, gas_left};
 }
 
