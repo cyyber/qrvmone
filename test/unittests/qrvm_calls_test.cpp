@@ -129,7 +129,7 @@ TEST_P(qrvm, create2)
     ASSERT_EQ(host.recorded_calls.size(), 1);
     const auto& call_msg = host.recorded_calls.back();
     EXPECT_EQ(call_msg.kind, QRVMC_CREATE2);
-    EXPECT_EQ(call_msg.gas, 263769);
+    EXPECT_EQ(call_msg.gas, 263780);
     EXPECT_EQ(call_msg.value, 0x01_bytes32);
     EXPECT_EQ(call_msg.input_size, 0x41);
     EXPECT_EQ(call_msg.create2_salt, 0x5a_bytes32);
@@ -182,7 +182,7 @@ TEST_P(qrvm, create_failure)
         execute(code);
         EXPECT_EQ(result.status_code, QRVMC_SUCCESS);
         ASSERT_EQ(result.output_size, 32);
-        EXPECT_EQ((bytes_view{result.output_data + 12, 20}), create_address);
+        EXPECT_EQ((bytes_view{result.output_data, result.output_size}), create_address.substr(32));
         ASSERT_EQ(host.recorded_calls.size(), 1);
         EXPECT_EQ(host.recorded_calls.back().kind, op == OP_CREATE ? QRVMC_CREATE : QRVMC_CREATE2);
         host.recorded_calls.clear();
@@ -215,7 +215,7 @@ TEST_P(qrvm, call_failing_with_value)
 
         // Fails on balance check.
         execute(12000, code);
-        EXPECT_GAS_USED(QRVMC_SUCCESS, 9347);
+        EXPECT_GAS_USED(QRVMC_SUCCESS, 9335);
         EXPECT_EQ(host.recorded_calls.size(), 0);  // There was no call().
 
         // Fails on value transfer additional cost - minimum gas limit that triggers this condition.
@@ -249,7 +249,7 @@ TEST_P(qrvm, call_with_value)
     const auto& call_msg = host.recorded_calls.back();
     EXPECT_EQ(call_msg.kind, QRVMC_CALL);
     EXPECT_EQ(call_msg.depth, 1);
-    EXPECT_EQ(call_msg.gas, 30212);
+    EXPECT_EQ(call_msg.gas, 30224);
     EXPECT_EQ(call_msg.recipient, call_dst);
     EXPECT_EQ(call_msg.sender, call_sender);
 }
@@ -257,12 +257,12 @@ TEST_P(qrvm, call_with_value)
 TEST_P(qrvm, call_with_value_depth_limit)
 {
     auto call_dst = qrvmc_address{};
-    call_dst.bytes[19] = 0xaa;
+    call_dst.bytes[63] = 0xaa;
     host.accounts[call_dst] = {};
 
     msg.depth = 1024;
     execute(bytecode{"60ff600060ff6000600160aa618000f150"});
-    EXPECT_EQ(gas_used, 9347);
+    EXPECT_EQ(gas_used, 9335);
     EXPECT_EQ(result.status_code, QRVMC_SUCCESS);
     EXPECT_EQ(host.recorded_calls.size(), 0);
 }
@@ -342,7 +342,7 @@ TEST_P(qrvm, call_value_zero_to_nonexistent_account)
                       push(call_gas) + OP_CALL + OP_POP;
 
     execute(9000, code);
-    EXPECT_EQ(gas_used, 7629);
+    EXPECT_EQ(gas_used, 7626);
     EXPECT_EQ(result.status_code, QRVMC_SUCCESS);
     ASSERT_EQ(host.recorded_calls.size(), 1);
     const auto& call_msg = host.recorded_calls.back();
@@ -351,7 +351,7 @@ TEST_P(qrvm, call_value_zero_to_nonexistent_account)
     EXPECT_EQ(call_msg.gas, 6000);
     EXPECT_EQ(call_msg.input_size, 64);
     EXPECT_EQ(call_msg.recipient, "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aa"_address);
-    EXPECT_EQ(call_msg.value.bytes[31], 0);
+    EXPECT_EQ(call_msg.value.bytes[63], 0);
 }
 
 TEST_P(qrvm, call_new_account_creation_cost)
@@ -371,7 +371,7 @@ TEST_P(qrvm, call_new_account_creation_cost)
     EXPECT_EQ(host.recorded_calls.back().recipient, call_dst);
     EXPECT_EQ(host.recorded_calls.back().gas, 0);
     EXPECT_EQ(host.recorded_calls.back().sender, msg_dst);
-    EXPECT_EQ(host.recorded_calls.back().value.bytes[31], 0);
+    EXPECT_EQ(host.recorded_calls.back().value.bytes[63], 0);
     EXPECT_EQ(host.recorded_calls.back().input_size, 0);
     ASSERT_EQ(host.recorded_account_accesses.size(), 4);
     host.recorded_account_accesses.clear();
@@ -379,14 +379,16 @@ TEST_P(qrvm, call_new_account_creation_cost)
 
     rev = QRVMC_ZOND;
     host.accounts[msg.recipient].set_balance(1);
-    execute(code, "0000000000000000000000000000000000000000000000000000000000000001"_hex);
+    execute(code,
+        "0000000000000000000000000000000000000000000000000000000000000000"
+        "0000000000000000000000000000000000000000000000000000000000000001"_hex);
     EXPECT_GAS_USED(QRVMC_SUCCESS, 36639);
     EXPECT_OUTPUT_INT(1);
     ASSERT_EQ(host.recorded_calls.size(), 1);
     EXPECT_EQ(host.recorded_calls.back().recipient, call_dst);
     EXPECT_EQ(host.recorded_calls.back().gas, 2300);
     EXPECT_EQ(host.recorded_calls.back().sender, msg_dst);
-    EXPECT_EQ(host.recorded_calls.back().value.bytes[31], 1);
+    EXPECT_EQ(host.recorded_calls.back().value.bytes[63], 1);
     EXPECT_EQ(host.recorded_calls.back().input_size, 0);
     ASSERT_EQ(host.recorded_account_accesses.size(), 6);
     EXPECT_EQ(host.recorded_account_accesses[1], msg.recipient);  // Balance.
@@ -400,7 +402,7 @@ TEST_P(qrvm, call_then_oog)
 {
     // Performs a CALL then OOG in the same code block.
     auto call_dst = qrvmc_address{};
-    call_dst.bytes[19] = 0xaa;
+    call_dst.bytes[63] = 0xaa;
     host.accounts[call_dst] = {};
     host.call_result.status_code = QRVMC_FAILURE;
     host.call_result.gas_left = 0;
@@ -419,7 +421,7 @@ TEST_P(qrvm, delegatecall_then_oog)
 {
     // Performs a CALL then OOG in the same code block.
     auto call_dst = qrvmc_address{};
-    call_dst.bytes[19] = 0xaa;
+    call_dst.bytes[63] = 0xaa;
     host.accounts[call_dst] = {};
     host.call_result.status_code = QRVMC_FAILURE;
     host.call_result.gas_left = 0;
@@ -438,7 +440,7 @@ TEST_P(qrvm, staticcall_then_oog)
 {
     // Performs a STATICCALL then OOG in the same code block.
     auto call_dst = qrvmc_address{};
-    call_dst.bytes[19] = 0xaa;
+    call_dst.bytes[63] = 0xaa;
     host.accounts[call_dst] = {};
     host.call_result.status_code = QRVMC_FAILURE;
     host.call_result.gas_left = 0;
@@ -455,7 +457,7 @@ TEST_P(qrvm, staticcall_then_oog)
 
 TEST_P(qrvm, staticcall_input)
 {
-    const auto code = mstore(3, 0x010203) + staticcall(0).gas(0xee).input(32, 3);
+    const auto code = mstore(0, 0x010203) + staticcall(0).gas(0xee).input(61, 3);
     execute(code);
     ASSERT_EQ(host.recorded_calls.size(), 1);
     const auto& call_msg = host.recorded_calls.back();
@@ -535,7 +537,7 @@ TEST_P(qrvm, call_value)
 
     msg.sender = origin;
     msg.recipient = executor;
-    msg.value.bytes[31] = origin_value;
+    msg.value.bytes[63] = origin_value;
     host.accounts[executor].set_balance(passed_value);
     host.accounts[recipient] = {};  // Create the call recipient account.
 
@@ -553,7 +555,7 @@ TEST_P(qrvm, call_value)
         EXPECT_GAS_USED(QRVMC_SUCCESS, (op == OP_CALL) ? 11621 : 121);
         ASSERT_EQ(host.recorded_calls.size(), 1);
         const auto& call = host.recorded_calls[0];
-        EXPECT_EQ(call.value.bytes[31], expected_value) << op;
+        EXPECT_EQ(call.value.bytes[63], expected_value) << op;
         host.recorded_calls.clear();
     }
 }
@@ -614,7 +616,8 @@ TEST_P(qrvm, returndatacopy)
     host.call_result.output_size = std::size(call_output);
     host.call_result.output_data = std::begin(call_output);
 
-    const bytecode code = "600080808060aa60fff4506020600060003e60206000f3";
+    const auto code = push(0) + 3 * OP_DUP1 + push(0xaa) + push(0xff) + OP_DELEGATECALL +
+                      OP_POP + push(32) + push(0) + push(0) + OP_RETURNDATACOPY + ret(0, 32);
     execute(code);
     EXPECT_EQ(gas_used, 2899);
     ASSERT_EQ(result.output_size, 32);
@@ -627,7 +630,8 @@ TEST_P(qrvm, returndatacopy)
 
 TEST_P(qrvm, returndatacopy_empty)
 {
-    const bytecode code = "600080808060aa60fff4600080803e60016000f3";
+    const auto code = push(0) + 3 * OP_DUP1 + push(0xaa) + push(0xff) + OP_DELEGATECALL +
+                      push(0) + 2 * OP_DUP1 + OP_RETURNDATACOPY + ret(0, 1);
     execute(code);
     EXPECT_EQ(gas_used, 2894);
     ASSERT_EQ(result.output_size, 1);
@@ -639,7 +643,8 @@ TEST_P(qrvm, returndatacopy_cost)
     auto call_output = uint8_t{};
     host.call_result.output_data = &call_output;
     host.call_result.output_size = sizeof(call_output);
-    auto code = "60008080808080fa6001600060003e";
+    auto code = push(0) + 5 * OP_DUP1 + OP_STATICCALL + push(1) + push(0) + push(0) +
+                OP_RETURNDATACOPY;
     execute(136, code);
     EXPECT_EQ(result.status_code, QRVMC_SUCCESS);
     execute(135, code);
@@ -651,13 +656,14 @@ TEST_P(qrvm, returndatacopy_outofrange)
     auto call_output = uint8_t{};
     host.call_result.output_data = &call_output;
     host.call_result.output_size = sizeof(call_output);
-    execute(735, "60008080808080fa6002600060003e");
+    const auto call = push(0) + 5 * OP_DUP1 + OP_STATICCALL;
+    execute(735, call + push(2) + push(0) + push(0) + OP_RETURNDATACOPY);
     EXPECT_EQ(result.status_code, QRVMC_INVALID_MEMORY_ACCESS);
 
-    execute(735, "60008080808080fa6001600160003e");
+    execute(735, call + push(1) + push(1) + push(0) + OP_RETURNDATACOPY);
     EXPECT_EQ(result.status_code, QRVMC_INVALID_MEMORY_ACCESS);
 
-    execute(735, "60008080808080fa6000600260003e");
+    execute(735, call + push(0) + push(2) + push(0) + OP_RETURNDATACOPY);
     EXPECT_EQ(result.status_code, QRVMC_INVALID_MEMORY_ACCESS);
 }
 

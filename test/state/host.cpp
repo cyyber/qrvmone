@@ -97,12 +97,12 @@ size_t Host::copy_code(const address& addr, size_t code_offset, uint8_t* buffer_
     return num_bytes;
 }
 
-// ADR-004 (48-byte Zond address derivation, option B+): the new account
-// address is the low 48 bytes of Keccak-512("QRL-ADDR-v1" || data). For
+// ADR-004 (64-byte Zond address derivation): the new account address is
+// Keccak-512("QRL-ADDR-v1" || data). For
 // CREATE, data is rlp(sender, nonce); for CREATE2, data is
 // 0xff || sender || salt || keccak256(init_code). The mock host mirrors
-// the on-chain go-qrl derivation so cross-VM state tests hash to the
-// same addresses under the widened layout.
+// the on-chain go-qrl derivation so cross-VM state tests hash to the same
+// addresses under the widened layout.
 address compute_new_account_address(const address& sender, uint64_t sender_nonce,
     const std::optional<bytes32>& salt, bytes_view init_code) noexcept
 {
@@ -133,10 +133,9 @@ address compute_new_account_address(const address& sender, uint64_t sender_nonce
 
     const auto h512 = ethash::keccak512(hashed_input.data(), hashed_input.size());
     qrvmc_address new_addr{};
-    static_assert(sizeof(h512.bytes) == 64 && sizeof(new_addr.bytes) == 48,
-        "Keccak-512 is 64 bytes, QRL address is 48 bytes — "
-        "taking the low 48 bytes yields the ADR-004 address.");
-    std::copy_n(h512.bytes + 16, sizeof(new_addr.bytes), new_addr.bytes);
+    static_assert(sizeof(h512.bytes) == 64 && sizeof(new_addr.bytes) == 64,
+        "Keccak-512 is 64 bytes and QRL contract addresses use the full digest.");
+    std::copy_n(h512.bytes, sizeof(new_addr.bytes), new_addr.bytes);
     return new_addr;
 }
 

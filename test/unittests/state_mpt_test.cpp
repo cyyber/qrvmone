@@ -33,12 +33,12 @@ TEST(state_mpt, empty_trie)
 
 TEST(state_mpt, single_account_v1)
 {
-    // Expected value regenerated post-migration (48-byte address +
+    // Expected value regenerated post-migration (64-byte address +
     // 64-byte VM word). MPT keys derived from keccak256() are now wrapped
     // in 64-byte qrvmc::bytes32 containers (32-byte hash in low half),
     // so the trie root differs from the pre-migration go-zond reference.
     constexpr auto expected =
-        0xda1e4b94058b813e847ba099a37c0e28ad090aad6b8f8964d1da24ccad28d0af_bytes32;
+        0x2623bd1ee75a8f027d8623dabcc8ed8901934e780e45ee3ac42a6e6a5fb31ee5_bytes32;
 
     constexpr auto addr = "Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002"_address;
     constexpr uint64_t nonce = 0;

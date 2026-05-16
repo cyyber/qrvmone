@@ -157,17 +157,17 @@ TEST(execution_state, const_stack)
 TEST(execution_state, memory_view)
 {
     qrvmone::Memory memory;
-    memory.grow(32);
+    memory.grow(64);
 
     const qrvmone::bytes_view view{memory.data(), memory.size()};
-    ASSERT_EQ(view.size(), 32);
+    ASSERT_EQ(view.size(), 64);
     EXPECT_EQ(view[0], 0x00);
     EXPECT_EQ(view[1], 0x00);
     EXPECT_EQ(view[2], 0x00);
 
     memory[0] = 0xc0;
     memory[2] = 0xc2;
-    ASSERT_EQ(view.size(), 32);
+    ASSERT_EQ(view.size(), 64);
     EXPECT_EQ(view[0], 0xc0);
     EXPECT_EQ(view[1], 0x00);
     EXPECT_EQ(view[2], 0xc2);

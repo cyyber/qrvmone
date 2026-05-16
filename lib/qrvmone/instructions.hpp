@@ -29,23 +29,21 @@ inline constexpr intx::uint<N> mulmod(const intx::uint<N>& x, const intx::uint<N
     return intx::udivrem(intx::umul(x, y), mod).rem;
 }
 
-/// Special case: load from qrvmc_address (48 bytes) as right-aligned uint512
+/// Special case: load from qrvmc_address (64 bytes) as uint512.
 inline uint512 load_uint_addr(const qrvmc_address& src) noexcept
 {
-    // Address is right-aligned on the stack (like uint384).
-    // Load 48 bytes from qrvmc_address into lower 384 bits of uint512.
     uint512 result = 0;
-    for (size_t i = 0; i < 48; ++i)
+    for (size_t i = 0; i < sizeof(src.bytes); ++i)
         result = (result << 8) | src.bytes[i];
-    return result;  // Value is in lower 384 bits, upper 128 bits are zero.
+    return result;
 }
 
-/// Store uint512 into qrvmc_address, taking lower 48 bytes (right-aligned address)
+/// Store uint512 into qrvmc_address, taking all 64 bytes.
 inline qrvmc_address trunc_to_addr(const uint512& x) noexcept
 {
     qrvmc_address addr{};
     uint512 tmp = x;
-    for (int i = 47; i >= 0; --i)
+    for (int i = static_cast<int>(sizeof(addr.bytes)) - 1; i >= 0; --i)
     {
         addr.bytes[i] = static_cast<uint8_t>(tmp);
         tmp >>= 8;

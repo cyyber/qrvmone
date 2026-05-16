@@ -65,11 +65,11 @@ TEST_P(qrvm, tx_context)
     host.tx_context.block_timestamp = 0xdd;
     host.tx_context.block_number = 0x1100;
     host.tx_context.block_gas_limit = 0x990000;
-    host.tx_context.chain_id.bytes[28] = 0xaa;
-    host.tx_context.block_coinbase.bytes[1] = 0xcc;
-    host.tx_context.tx_origin.bytes[2] = 0x55;
-    host.tx_context.block_prev_randao.bytes[1] = 0xdd;
-    host.tx_context.tx_gas_price.bytes[2] = 0x66;
+    host.tx_context.chain_id.bytes[60] = 0xaa;
+    host.tx_context.block_coinbase.bytes[45] = 0xcc;
+    host.tx_context.tx_origin.bytes[46] = 0x55;
+    host.tx_context.block_prev_randao.bytes[33] = 0xdd;
+    host.tx_context.tx_gas_price.bytes[34] = 0x66;
 
     auto const code = bytecode{} + OP_TIMESTAMP + OP_COINBASE + OP_OR + OP_GASPRICE + OP_OR +
                       OP_NUMBER + OP_OR + OP_PREVRANDAO + OP_OR + OP_GASLIMIT + OP_OR + OP_ORIGIN +
@@ -91,7 +91,7 @@ TEST_P(qrvm, tx_context)
 TEST_P(qrvm, balance)
 {
     host.accounts[msg.recipient].set_balance(0x0504030201);
-    auto code = bytecode{} + OP_ADDRESS + OP_BALANCE + mstore(0) + ret(32 - 6, 6);
+    auto code = bytecode{} + OP_ADDRESS + OP_BALANCE + mstore(0) + ret(64 - 6, 6);
     execute(417, code);
     EXPECT_GAS_USED(QRVMC_SUCCESS, 117);
     ASSERT_EQ(result.output_size, 6);
@@ -128,7 +128,7 @@ TEST_P(qrvm, selfbalance)
     host.accounts[msg.recipient].set_balance(0x0504030201);
     // NOTE: adding push here to balance out the stack pre-Istanbul (needed to get undefined
     // instruction as a result)
-    auto code = bytecode{} + push(1) + OP_SELFBALANCE + mstore(0) + ret(32 - 6, 6);
+    auto code = bytecode{} + push(1) + OP_SELFBALANCE + mstore(0) + ret(64 - 6, 6);
 
     rev = QRVMC_ZOND;
     execute(code);
@@ -160,7 +160,7 @@ TEST_P(qrvm, log)
         ASSERT_EQ(last_log.topics.size(), n);
         for (size_t i = 0; i < static_cast<size_t>(n); ++i)
         {
-            EXPECT_EQ(last_log.topics[i].bytes[31], 4 - i);
+            EXPECT_EQ(last_log.topics[i].bytes[63], 4 - i);
         }
     }
 }
@@ -198,7 +198,7 @@ TEST_P(qrvm, log_data_cost)
 
 TEST_P(qrvm, blockhash)
 {
-    host.block_hash.bytes[13] = 0x13;
+    host.block_hash.bytes[45] = 0x13;
 
     host.tx_context.block_number = 0;
     const auto code = push(0) + OP_BLOCKHASH + ret_top();
@@ -233,16 +233,15 @@ TEST_P(qrvm, extcode)
     host.accounts[addr].code = {'a', 'b', 'c', 'd'};
 
     bytecode code;
-    code += "6002600003803b60019003";  // S = EXTCODESIZE(-2) - 1
-    code += "90600080913c";            // EXTCODECOPY(-2, 0, 0, S)
-    code += "60046000f3";              // RETURN(0, 4)
+    code += push(3) + push(0) + push(0) + push(addr) + OP_EXTCODECOPY;
+    code += ret(0, 4);
 
     execute(code);
-    EXPECT_EQ(gas_used, 2745);
+    EXPECT_EQ(gas_used, 2624);
     ASSERT_EQ(result.output_size, 4);
     EXPECT_EQ(bytes_view(result.output_data, 3), bytes_view(host.accounts[addr].code.data(), 3));
     EXPECT_EQ(result.output_data[3], 0);
-    ASSERT_EQ(host.recorded_account_accesses.size(), 6);
+    ASSERT_EQ(host.recorded_account_accesses.size(), 4);
     EXPECT_EQ(host.recorded_account_accesses[2], addr);
     EXPECT_EQ(host.recorded_account_accesses[3], addr);
 }
@@ -275,8 +274,7 @@ TEST_P(qrvm, extcodehash)
     EXPECT_EQ(gas_used, 118);
     ASSERT_EQ(result.output_size, 32);
     auto expected_hash = bytes(32, 0xee);
-    EXPECT_EQ(bytes_view(result.output_data, result.output_size),
-        bytes_view(std::begin(hash.bytes), std::size(hash.bytes)));
+    EXPECT_EQ(bytes_view(result.output_data, result.output_size), bytes_view(&hash.bytes[32], 32));
 }
 
 TEST_P(qrvm, codecopy_empty)
@@ -327,13 +325,13 @@ TEST_P(qrvm, extcodecopy_nonzero_index)
     EXPECT_EQ(result.output_data[0], 0xc0);
     EXPECT_EQ(result.output_data[1], 0);
     ASSERT_EQ(host.recorded_account_accesses.size(), 4);
-    EXPECT_EQ(host.recorded_account_accesses.back().bytes[19], 0xa);
+    EXPECT_EQ(host.recorded_account_accesses.back().bytes[63], 0xa);
 }
 
 TEST_P(qrvm, extcodecopy_fill_tail)
 {
     auto addr = qrvmc_address{};
-    addr.bytes[19] = 0xa;
+    addr.bytes[63] = 0xa;
 
     auto& extcode = host.accounts[addr].code;
     extcode = {0xff, 0xfe};
@@ -341,7 +339,7 @@ TEST_P(qrvm, extcodecopy_fill_tail)
     auto code = push(2) + push(0) + push(0) + push(0xa) + OP_EXTCODECOPY + ret(0, 2);
     execute(code);
     ASSERT_EQ(host.recorded_account_accesses.size(), 4);
-    EXPECT_EQ(host.recorded_account_accesses.back().bytes[19], 0xa);
+    EXPECT_EQ(host.recorded_account_accesses.back().bytes[63], 0xa);
     EXPECT_EQ(result.status_code, QRVMC_SUCCESS);
     ASSERT_EQ(result.output_size, 2);
     EXPECT_EQ(result.output_data[0], 0xff);

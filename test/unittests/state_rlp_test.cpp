@@ -237,7 +237,7 @@ TEST(state_rlp, tx_to_rlp_eip1559)
     // hand-rolled here. The keccak comparison below catches any change.
 
     EXPECT_EQ(keccak256(rlp_rep),
-        0x4572c2c1951b072270fbe5db20107be35ef7a5684f3e5f7e74e190dde83f9c7d_bytes32);
+        0x9ef2ba22b1f244545fce3f44564bf760376afb99b283e0175e1739202e06a404_bytes32);
 }
 
 TEST(state_rlp, tx_to_rlp_eip1559_with_data)
@@ -269,7 +269,7 @@ TEST(state_rlp, tx_to_rlp_eip1559_with_data)
     // The keccak comparison below catches any change.
 
     EXPECT_EQ(keccak256(rlp_rep),
-        0xe4494b2566b5ebc3122c7f2f90f056376814bd092258a22f58fb645c87978243_bytes32);
+        0x2af5a7212057454426a8e8cbd243924e18ec0122ca00fa167a272245047c5990_bytes32);
 }
 
 TEST(state_rlp, tx_to_rlp_eip1559_with_non_empty_access_list)
@@ -294,5 +294,5 @@ TEST(state_rlp, tx_to_rlp_eip1559_with_non_empty_access_list)
     tx.chain_id = 1;
 
     EXPECT_EQ(keccak256(rlp::encode(tx)),
-        0xb49ee06b47dd49a8ecad45a4325ebf73517214cd3573b212e880ba9f3ddd998d_bytes32);
+        0x343d1e1a494cc29e763d29955aa2298d04d4bf4911bce11e4d70c5bd81dd55eb_bytes32);
 }
