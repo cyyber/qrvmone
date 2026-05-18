@@ -18,7 +18,7 @@ The codebase of _qrvmone_ is optimized to provide fast and efficient execution o
 
 1. Exposes the [QRVMC] API.
 2. Requires C++20 standard.
-3. The [intx] library is used to provide 256-bit integer precision.
+3. The [intx] library is used to provide multi-precision integer arithmetic (256-bit and 512-bit) used by the QRVM stack.
 4. The [ethash] library is used to provide Keccak hash function implementation
    needed for the special `KECCAK256` instruction.
 5. Contains two interpreters: 

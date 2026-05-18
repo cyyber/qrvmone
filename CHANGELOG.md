@@ -10,14 +10,14 @@ and this project adheres to [Semantic Versioning].
 ### Breaking changes
 
 Release aligned to the QRVMC v2.0.0 ABI, which widens the VM word to
-512 bits and the QRL address to 48 bytes for the Zond network.
+512 bits and the QRL address to 64 bytes for the Zond network.
 
 - Stack slot is now `uint512` (512-bit big-endian integers on the
   interpreter stack).
 - `qrvmc_bytes32` is 64 bytes wide (wire-level value for SSTORE/SLOAD
   values, log topics, `qrvmc_message.create2_salt`, block/transaction
   context fields).
-- `qrvmc_address` is 48 bytes wide (ML-DSA-87 QRL address layout).
+- `qrvmc_address` is 64 bytes wide (ML-DSA-87 QRL address layout).
 - New opcodes `PUSH33`..`PUSH64` at `0x80`..`0x9f`.
 - `DUP1`..`DUP16` shifted from `0x80`..`0x8f` to `0xa0`..`0xaf`.
 - `SWAP1`..`SWAP16` shifted from `0x90`..`0x9f` to `0xb0`..`0xbf`.
