@@ -38,7 +38,7 @@ enum class InstructionCategory : char
 constexpr InstructionCategory get_instruction_category(Opcode opcode) noexcept
 {
     const auto trait = instr::traits[opcode];
-    if (opcode >= OP_PUSH1 && opcode <= OP_PUSH32)
+    if (opcode >= OP_PUSH1 && opcode <= OP_PUSH64)
         return InstructionCategory::push;
     else if (opcode >= OP_SWAP1 && opcode <= OP_SWAP16)
         return InstructionCategory::swap;
@@ -185,7 +185,8 @@ bytecode generate_loop_v1(const bytecode& inner_code)
     const auto counter = push(255);
     const auto jumpdest_offset = counter.size();
     return counter + OP_JUMPDEST + inner_code +  // loop label + inner code
-           push("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff") +  // -1
+           push("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+                "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff") +  // -1
            OP_ADD + OP_DUP1 +                 // counter += (-1)
            push(jumpdest_offset) + OP_JUMPI;  // jump to jumpdest_offset if counter != 0
 }
@@ -199,7 +200,8 @@ bytecode generate_loop_v1(const bytecode& inner_code)
 bytecode generate_loop_v2(const bytecode& inner_code)
 {
     const auto counter =
-        push("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff01");  // -255
+        push("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+             "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff01");  // -255
     const auto jumpdest_offset = counter.size();
     return counter + OP_JUMPDEST + inner_code +  // loop label + inner code
            push(1) + OP_ADD + OP_DUP1 +          // counter += 1
@@ -240,7 +242,7 @@ void register_synthetic_benchmarks()
             params_list.end(), {{opcode, Mode::min_stack}, {opcode, Mode::full_stack}});
 
     // PUSH.
-    for (auto opcode = OP_PUSH1; opcode <= OP_PUSH32; opcode = static_cast<Opcode>(opcode + 1))
+    for (auto opcode = OP_PUSH1; opcode <= OP_PUSH64; opcode = static_cast<Opcode>(opcode + 1))
         params_list.insert(
             params_list.end(), {{opcode, Mode::min_stack}, {opcode, Mode::full_stack}});
 
