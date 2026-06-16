@@ -151,6 +151,10 @@ TEST(state_mpt_hash, eip1559_receipt_three_logs_no_logs)
     receipt1.gas_used = 0x2cd9b;
     receipt1.logs_bloom_filter = compute_bloom_filter(receipt1.logs);
 
+    // TODO(go-qrl): regression baseline regenerated after the bloom-filter
+    // digest-offset fix (bloom now reads the keccak digest from the low 32
+    // bytes of the 64-byte hash256). This value is self-derived from qrvmone
+    // and must be cross-checked against the go-qrl reference receipts root.
     EXPECT_EQ(mpt_hash(std::array{receipt0, receipt1}),
-        0x64c986b5ac8cd88887c4e1c4ae709a57e15f30a5839a58803ee7ed3d7c04cf27_bytes64);
+        0x514ec429aa30f695d7291dda0ad02015385e04f0647ab0eec46d86609ab897f6_bytes64);
 }
