@@ -8,7 +8,7 @@ std::ostream& operator<<(std::ostream& out, const qrvmone::address& a)
     return out << "0x" << hex(a);
 }
 
-std::ostream& operator<<(std::ostream& out, const qrvmone::bytes32& b)
+std::ostream& operator<<(std::ostream& out, const qrvmone::bytes64& b)
 {
     return out << "0x" << hex(b);
 }

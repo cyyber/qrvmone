@@ -24,11 +24,11 @@ TEST(state_mpt_hash, empty)
 TEST(state_mpt_hash, single_account_v1)
 {
     // Expected value regenerated post-migration (64-byte address +
-    // 64-byte VM word). The MPT keys are 64-byte qrvmc::bytes32 wrappers
+    // 64-byte VM word). The MPT keys are 64-byte qrvmc::bytes64 wrappers
     // with a 32-byte keccak-256 hash in the low half, so MPT hashes
     // diverge from the pre-migration go-zond reference.
     constexpr auto expected =
-        0x24cc200965e3532533e1e9a756bd278ddce98809e719b4c3a7cff21ef9784bab_bytes32;
+        0x24cc200965e3532533e1e9a756bd278ddce98809e719b4c3a7cff21ef9784bab_bytes64;
 
     Account acc;
     acc.balance = 1_u256;
@@ -43,28 +43,28 @@ TEST(state_mpt_hash, two_accounts)
 
     accounts["Q00"_address] = Account{};
     EXPECT_EQ(mpt_hash(accounts),
-        0x6de0e370fffa90193b7ab5e21079605588d9a880da4730b372838c73503dc34b_bytes32);
+        0x6de0e370fffa90193b7ab5e21079605588d9a880da4730b372838c73503dc34b_bytes64);
 
     Account acc2;
     acc2.nonce = 1;
     acc2.balance = -2_u256;
     acc2.code = {0x00};
-    acc2.storage[0x01_bytes32] = {0xfe_bytes32};
-    acc2.storage[0x02_bytes32] = {0xfd_bytes32};
+    acc2.storage[0x01_bytes64] = {0xfe_bytes64};
+    acc2.storage[0x02_bytes64] = {0xfd_bytes64};
     accounts["Q01"_address] = acc2;
     EXPECT_EQ(mpt_hash(accounts),
-        0x445a6104155b8e65709177f0a94d12013c00a95f1e88fc39efa26a24581517c9_bytes32);
+        0x445a6104155b8e65709177f0a94d12013c00a95f1e88fc39efa26a24581517c9_bytes64);
 }
 
 TEST(state_mpt_hash, deleted_storage)
 {
     Account acc;
-    acc.storage[0x01_bytes32] = {};
-    acc.storage[0x02_bytes32] = {0xfd_bytes32};
-    acc.storage[0x03_bytes32] = {};
+    acc.storage[0x01_bytes64] = {};
+    acc.storage[0x02_bytes64] = {0xfd_bytes64};
+    acc.storage[0x03_bytes64] = {};
     const std::unordered_map<address, Account> accounts{{"Q07"_address, acc}};
     EXPECT_EQ(mpt_hash(accounts),
-        0x69caae93c0a679336acf14ac8be9ed281d5e0b1ea3d85fb544b1ac20037d83bd_bytes32);
+        0x69caae93c0a679336acf14ac8be9ed281d5e0b1ea3d85fb544b1ac20037d83bd_bytes64);
 }
 
 TEST(state_mpt_hash, one_transactions)
@@ -109,7 +109,7 @@ TEST(state_mpt_hash, one_transactions)
     tx.chain_id = 11155111;
 
     const auto tx_root = mpt_hash(std::array{tx});
-    EXPECT_EQ(tx_root, 0xac99ed689f40aaa4b8e263cd8e572c3647e91f37c9ae6f9a670becf4a0d37523_bytes32);
+    EXPECT_EQ(tx_root, 0xac99ed689f40aaa4b8e263cd8e572c3647e91f37c9ae6f9a670becf4a0d37523_bytes64);
 }
 
 TEST(state_mpt_hash, eip1559_receipt_three_logs_no_logs)
@@ -122,25 +122,25 @@ TEST(state_mpt_hash, eip1559_receipt_three_logs_no_logs)
     Log l0;
     l0.addr = "Q0000000000000000000000000000000000000000000000000000000084bf5c35c54a994c72ff9d8b4cca8f5034153a2c"_address;
     l0.data = "0x0000000000000000000000000000000000000000000000000000000063ee2f6c"_hex;
-    l0.topics = {0x0109fc6f55cf40689f02fbaad7af7fe7bbac8a3d2186600afc7d3e10cac60271_bytes32,
-        0x00000000000000000000000000000000000000000000000000000000000027b6_bytes32,
-        0x00000000000000000000000038dc84830b92d171d7b4c129c813360d6ab8b54e_bytes32};
+    l0.topics = {0x0109fc6f55cf40689f02fbaad7af7fe7bbac8a3d2186600afc7d3e10cac60271_bytes64,
+        0x00000000000000000000000000000000000000000000000000000000000027b6_bytes64,
+        0x00000000000000000000000038dc84830b92d171d7b4c129c813360d6ab8b54e_bytes64};
 
     Log l1;
     l1.addr = "Q0000000000000000000000000000000000000000000000000000000084bf5c35c54a994c72ff9d8b4cca8f5034153a2c"_address;
     l1.data = ""_b;
     l1.topics = {
-        0x92e98423f8adac6e64d0608e519fd1cefb861498385c6dee70d58fc926ddc68c_bytes32,
-        0x00000000000000000000000000000000000000000000000000000000481f2280_bytes32,
-        0x00000000000000000000000000000000000000000000000000000000000027b6_bytes32,
-        0x00000000000000000000000038dc84830b92d171d7b4c129c813360d6ab8b54e_bytes32,
+        0x92e98423f8adac6e64d0608e519fd1cefb861498385c6dee70d58fc926ddc68c_bytes64,
+        0x00000000000000000000000000000000000000000000000000000000481f2280_bytes64,
+        0x00000000000000000000000000000000000000000000000000000000000027b6_bytes64,
+        0x00000000000000000000000038dc84830b92d171d7b4c129c813360d6ab8b54e_bytes64,
     };
 
     Log l2;
     l2.addr = "Q0000000000000000000000000000000000000000000000000000000084bf5c35c54a994c72ff9d8b4cca8f5034153a2c"_address;
     l2.data = ""_b;
-    l2.topics = {0xfe25c73e3b9089fac37d55c4c7efcba6f04af04cebd2fc4d6d7dbb07e1e5234f_bytes32,
-        0x000000000000000000000000000000000000000000000c958b4bca4282ac0000_bytes32};
+    l2.topics = {0xfe25c73e3b9089fac37d55c4c7efcba6f04af04cebd2fc4d6d7dbb07e1e5234f_bytes64,
+        0x000000000000000000000000000000000000000000000c958b4bca4282ac0000_bytes64};
 
     receipt0.logs = {l0, l1, l2};
     receipt0.logs_bloom_filter = compute_bloom_filter(receipt0.logs);
@@ -152,5 +152,5 @@ TEST(state_mpt_hash, eip1559_receipt_three_logs_no_logs)
     receipt1.logs_bloom_filter = compute_bloom_filter(receipt1.logs);
 
     EXPECT_EQ(mpt_hash(std::array{receipt0, receipt1}),
-        0x64c986b5ac8cd88887c4e1c4ae709a57e15f30a5839a58803ee7ed3d7c04cf27_bytes32);
+        0x64c986b5ac8cd88887c4e1c4ae709a57e15f30a5839a58803ee7ed3d7c04cf27_bytes64);
 }

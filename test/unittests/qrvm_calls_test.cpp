@@ -85,16 +85,16 @@ TEST_P(qrvm, create)
 
     EXPECT_GAS_USED(QRVMC_SUCCESS, 117916);
 
-    EXPECT_EQ(account.storage[0x01_bytes32].current,
-        0x000000000000000000000000cc010203040506070809010203040506070809ce_bytes32);
+    EXPECT_EQ(account.storage[0x01_bytes64].current,
+        0x000000000000000000000000cc010203040506070809010203040506070809ce_bytes64);
 
     ASSERT_EQ(host.recorded_calls.size(), 1);
     const auto& call_msg = host.recorded_calls.back();
     EXPECT_EQ(call_msg.kind, QRVMC_CREATE);
     EXPECT_EQ(call_msg.gas, 263799);
-    EXPECT_EQ(call_msg.value, 0x01_bytes32);
+    EXPECT_EQ(call_msg.value, 0x01_bytes64);
     EXPECT_EQ(call_msg.input_size, 0x20);
-    EXPECT_EQ(call_msg.create2_salt, 0x00_bytes32);
+    EXPECT_EQ(call_msg.create2_salt, 0x00_bytes64);
 }
 
 TEST_P(qrvm, create_gas)
@@ -130,12 +130,12 @@ TEST_P(qrvm, create2)
     const auto& call_msg = host.recorded_calls.back();
     EXPECT_EQ(call_msg.kind, QRVMC_CREATE2);
     EXPECT_EQ(call_msg.gas, 263780);
-    EXPECT_EQ(call_msg.value, 0x01_bytes32);
+    EXPECT_EQ(call_msg.value, 0x01_bytes64);
     EXPECT_EQ(call_msg.input_size, 0x41);
-    EXPECT_EQ(call_msg.create2_salt, 0x5a_bytes32);
+    EXPECT_EQ(call_msg.create2_salt, 0x5a_bytes64);
 
-    EXPECT_EQ(account.storage[0x01_bytes32].current,
-        0x000000000000000000000000c2010203040506070809010203040506070809ce_bytes32);
+    EXPECT_EQ(account.storage[0x01_bytes64].current,
+        0x000000000000000000000000c2010203040506070809010203040506070809ce_bytes64);
 }
 
 TEST_P(qrvm, create2_salt_cost)

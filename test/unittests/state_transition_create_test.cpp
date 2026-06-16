@@ -19,7 +19,7 @@ TEST_F(state_transition, create2_factory)
     pre.insert(*tx.to, {.nonce = 1, .code = factory_code});
 
     const auto create_address =
-        state::compute_new_account_address(*tx.to, pre.get(*tx.to).nonce, 0x00_bytes32, initcode);
+        state::compute_new_account_address(*tx.to, pre.get(*tx.to).nonce, 0x00_bytes64, initcode);
     expect.post[*tx.to].nonce = pre.get(*tx.to).nonce + 1;  // CREATE caller's nonce must be bumped
     expect.post[create_address].code = bytes{0xFE};
 }

@@ -14,7 +14,7 @@ bool Host::account_exists(const address& addr) const noexcept
     return acc != nullptr && (!acc->is_empty());
 }
 
-bytes32 Host::get_storage(const address& addr, const bytes32& key) const noexcept
+bytes64 Host::get_storage(const address& addr, const bytes64& key) const noexcept
 {
     const auto& acc = m_state.get(addr);
     if (const auto it = acc.storage.find(key); it != acc.storage.end())
@@ -23,7 +23,7 @@ bytes32 Host::get_storage(const address& addr, const bytes32& key) const noexcep
 }
 
 qrvmc_storage_status Host::set_storage(
-    const address& addr, const bytes32& key, const bytes32& value) noexcept
+    const address& addr, const bytes64& key, const bytes64& value) noexcept
 {
     // Follow QRVMC documentation https://evmc.ethereum.org/storagestatus.html#autotoc_md3
     // and EIP-2200 specification https://eips.ethereum.org/EIPS/eip-2200.
@@ -67,10 +67,10 @@ qrvmc_storage_status Host::set_storage(
     return status;
 }
 
-uint256be Host::get_balance(const address& addr) const noexcept
+uint512be Host::get_balance(const address& addr) const noexcept
 {
     const auto* const acc = m_state.find(addr);
-    return (acc != nullptr) ? to_be256(acc->balance) : uint256be{};
+    return (acc != nullptr) ? to_be256(acc->balance) : uint512be{};
 }
 
 size_t Host::get_code_size(const address& addr) const noexcept
@@ -79,11 +79,11 @@ size_t Host::get_code_size(const address& addr) const noexcept
     return (acc != nullptr) ? acc->code.size() : 0;
 }
 
-bytes32 Host::get_code_hash(const address& addr) const noexcept
+bytes64 Host::get_code_hash(const address& addr) const noexcept
 {
     // TODO: Cache code hash. It will be needed also to compute the MPT hash.
     const auto* const acc = m_state.find(addr);
-    return (acc != nullptr && !acc->is_empty()) ? keccak256(acc->code) : bytes32{};
+    return (acc != nullptr && !acc->is_empty()) ? keccak256(acc->code) : bytes64{};
 }
 
 size_t Host::copy_code(const address& addr, size_t code_offset, uint8_t* buffer_data,
@@ -104,7 +104,7 @@ size_t Host::copy_code(const address& addr, size_t code_offset, uint8_t* buffer_
 // the on-chain go-qrl derivation so cross-VM state tests hash to the same
 // addresses under the widened layout.
 address compute_new_account_address(const address& sender, uint64_t sender_nonce,
-    const std::optional<bytes32>& salt, bytes_view init_code) noexcept
+    const std::optional<bytes64>& salt, bytes_view init_code) noexcept
 {
     static constexpr char kDomain[] = "QRL-ADDR-v1";
     static constexpr size_t kDomainLen = sizeof(kDomain) - 1;  // exclude NUL
@@ -299,12 +299,12 @@ qrvmc_tx_context Host::get_tx_context() const noexcept
         m_block.timestamp,
         m_block.gas_limit,
         m_block.prev_randao,
-        0x01_bytes32,  // Chain ID is expected to be 1.
+        0x01_bytes64,  // Chain ID is expected to be 1.
         to_be256(m_block.base_fee),
     };
 }
 
-bytes32 Host::get_block_hash(int64_t block_number) const noexcept
+bytes64 Host::get_block_hash(int64_t block_number) const noexcept
 {
     (void)block_number;
     // TODO: This is not properly implemented, but only single state test requires BLOCKHASH
@@ -313,7 +313,7 @@ bytes32 Host::get_block_hash(int64_t block_number) const noexcept
 }
 
 void Host::emit_log(const address& addr, const uint8_t* data, size_t data_size,
-    const bytes32 topics[], size_t topics_count) noexcept
+    const bytes64 topics[], size_t topics_count) noexcept
 {
     m_logs.push_back({addr, {data, data_size}, {topics, topics + topics_count}});
 }
@@ -330,7 +330,7 @@ qrvmc_access_status Host::access_account(const address& addr) noexcept
     return status;
 }
 
-qrvmc_access_status Host::access_storage(const address& addr, const bytes32& key) noexcept
+qrvmc_access_status Host::access_storage(const address& addr, const bytes64& key) noexcept
 {
     return std::exchange(m_state.get(addr).storage[key].access_status, QRVMC_ACCESS_WARM);
 }

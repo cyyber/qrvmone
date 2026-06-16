@@ -14,7 +14,7 @@ namespace
 /// The collection of nibbles (4-bit values) representing a path in a MPT.
 ///
 /// Trie keys are typically Keccak-256 hashes wrapped in the post-migration
-/// 64-byte bytes32 container (32-byte hash in the low half, upper half
+/// 64-byte bytes64 container (32-byte hash in the low half, upper half
 /// zeroed), so each key is 64 bytes wide and produces 128 nibbles. Sizing
 /// the inline buffer at 128 leaves enough headroom for any current call
 /// site without dropping back to a heap allocation.

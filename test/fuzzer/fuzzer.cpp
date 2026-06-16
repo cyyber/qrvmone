@@ -16,7 +16,7 @@ inline std::ostream& operator<<(std::ostream& os, const qrvmc_address& addr)
     return os << hex({addr.bytes, sizeof(addr.bytes)});
 }
 
-inline std::ostream& operator<<(std::ostream& os, const qrvmc_bytes32& v)
+inline std::ostream& operator<<(std::ostream& os, const qrvmc_bytes64& v)
 {
     return os << hex({v.bytes, sizeof(v.bytes)});
 }
@@ -103,14 +103,14 @@ struct fuzz_input
     explicit operator bool() const noexcept { return msg.gas != -1; }
 };
 
-inline qrvmc::uint256be generate_interesting_value(uint8_t b) noexcept
+inline qrvmc::uint512be generate_interesting_value(uint8_t b) noexcept
 {
     const auto s = (b >> 6) & 0b11;
     const auto fill = (b >> 5) & 0b1;
     const auto above = (b >> 4) & 0b1;
     const auto val = b & 0b1111;
 
-    auto z = qrvmc::uint256be{};
+    auto z = qrvmc::uint512be{};
 
     const size_t size = s == 0 ? 1 : 1 << (s + 2);
 
@@ -350,8 +350,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t data_size) noe
                 ASSERT_EQ(qrvmc::address{m1.sender}, qrvmc::address{m2.sender});
                 ASSERT_EQ(bytes_view(m1.input_data, m1.input_size),
                     bytes_view(m2.input_data, m2.input_size));
-                ASSERT_EQ(qrvmc::uint256be{m1.value}, qrvmc::uint256be{m2.value});
-                ASSERT_EQ(qrvmc::bytes32{m1.create2_salt}, qrvmc::bytes32{m2.create2_salt});
+                ASSERT_EQ(qrvmc::uint512be{m1.value}, qrvmc::uint512be{m2.value});
+                ASSERT_EQ(qrvmc::bytes64{m1.create2_salt}, qrvmc::bytes64{m2.create2_salt});
             }
 
             ASSERT(std::equal(ref_host.recorded_logs.begin(), ref_host.recorded_logs.end(),

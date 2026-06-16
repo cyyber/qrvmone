@@ -14,18 +14,18 @@ namespace qrvmone
 {
 using qrvmc::address;
 using qrvmc::bytes;
-using qrvmc::bytes32;
+using qrvmc::bytes64;
 using qrvmc::bytes_view;
 using namespace qrvmc::literals;
 
 /// Default type for 256-bit hash.
 ///
 /// Better than ethash::hash256 because has some additional handy constructors.
-/// After the 512-bit VM migration qrvmc::bytes32 is 64 bytes wide; a 256-bit
+/// After the 512-bit VM migration qrvmc::bytes64 is 64 bytes wide; a 256-bit
 /// Keccak hash lives in the low 32 bytes (bytes[32:64]), with the upper 32
 /// bytes zeroed. That matches the `store_uint` convention used on the VM
 /// stack/storage paths for 256-bit-sized values.
-using hash256 = bytes32;
+using hash256 = bytes64;
 
 /// Computes Keccak hash out of input bytes (wrapper of ethash::keccak256).
 inline hash256 keccak256(bytes_view data) noexcept
@@ -41,17 +41,17 @@ inline hash256 keccak256(bytes_view data) noexcept
 /// The integer's big-endian bytes land in the low 32 bytes
 /// (bytes[32:64]); the upper 32 bytes are zero. Matches the
 /// `store_uint` convention used by qrvmone's core for 256-bit values
-/// transported through a qrvmc_bytes32 field (balance, msg.value, ...).
-inline qrvmc::bytes32 to_be256(const intx::uint256& x) noexcept
+/// transported through a qrvmc_bytes64 field (balance, msg.value, ...).
+inline qrvmc::bytes64 to_be256(const intx::uint256& x) noexcept
 {
-    qrvmc::bytes32 r{};
+    qrvmc::bytes64 r{};
     intx::be::store(*reinterpret_cast<uint8_t(*)[32]>(&r.bytes[32]), x);
     return r;
 }
 
-/// Reverse of to_be256: read the low 32 bytes of a qrvmc_bytes32 as an
+/// Reverse of to_be256: read the low 32 bytes of a qrvmc_bytes64 as an
 /// intx::uint256, ignoring the zero-padded upper half.
-inline intx::uint256 from_be256(const qrvmc::bytes32& r) noexcept
+inline intx::uint256 from_be256(const qrvmc::bytes64& r) noexcept
 {
     return intx::be::load<intx::uint256>(
         *reinterpret_cast<const uint8_t(*)[32]>(&r.bytes[32]));
@@ -59,4 +59,4 @@ inline intx::uint256 from_be256(const qrvmc::bytes32& r) noexcept
 }  // namespace qrvmone
 
 std::ostream& operator<<(std::ostream& out, const qrvmone::address& a);
-std::ostream& operator<<(std::ostream& out, const qrvmone::bytes32& b);
+std::ostream& operator<<(std::ostream& out, const qrvmone::bytes64& b);

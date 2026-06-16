@@ -38,7 +38,7 @@ protected:
         std::optional<uint64_t> nonce;
         std::optional<intx::uint256> balance;
         std::optional<bytes> code;
-        std::unordered_map<bytes32, bytes32> storage;
+        std::unordered_map<bytes64, bytes64> storage;
     };
 
     struct Expectation

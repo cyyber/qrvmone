@@ -109,7 +109,7 @@ int main(int argc, const char* argv[])
                     if (j_txs[i].contains("hash"))
                     {
                         const auto loaded_tx_hash_opt =
-                            qrvmc::from_hex<bytes32>(j_txs[i]["hash"].get<std::string>());
+                            qrvmc::from_hex<bytes64>(j_txs[i]["hash"].get<std::string>());
 
                         if (loaded_tx_hash_opt != computed_tx_hash)
                             throw std::logic_error("transaction hash mismatched: computed " +
@@ -140,7 +140,7 @@ int main(int argc, const char* argv[])
                         cumulative_gas_used += receipt.gas_used;
                         j_receipt["cumulativeGasUsed"] = hex0x(cumulative_gas_used);
 
-                        j_receipt["blockHash"] = hex0x(bytes32{});
+                        j_receipt["blockHash"] = hex0x(bytes64{});
                         j_receipt["contractAddress"] = hex0x(address{});
                         j_receipt["logsBloom"] = hex0x(receipt.logs_bloom_filter);
                         j_receipt["logs"] = json::json::array();  // FIXME: Add to_json<state:Log>

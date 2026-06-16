@@ -21,7 +21,7 @@ TEST(statetest_loader, block_info)
 
     const auto bi = test::from_json<state::BlockInfo>(json::json::parse(input));
     EXPECT_EQ(bi.coinbase, "Q000000000000000000000000000000000000000000000000000000001111111111111111111111111111111111111111"_address);
-    EXPECT_EQ(bi.prev_randao, 0x00_bytes32);
+    EXPECT_EQ(bi.prev_randao, 0x00_bytes64);
     EXPECT_EQ(bi.gas_limit, 0x0);
     EXPECT_EQ(bi.base_fee, 7);
     EXPECT_EQ(bi.timestamp, 0);
@@ -49,7 +49,7 @@ TEST(statetest_loader, block_info_hex)
 
     const auto bi = test::from_json<state::BlockInfo>(json::json::parse(input));
     EXPECT_EQ(bi.coinbase, "Q000000000000000000000000000000000000000000000000000000002adc25665018aa1fe0e6bc666dac8fc2697ff9ba"_address);
-    EXPECT_EQ(bi.prev_randao, 0x00_bytes32);
+    EXPECT_EQ(bi.prev_randao, 0x00_bytes64);
     EXPECT_EQ(bi.gas_limit, 100000000000000000);
     EXPECT_EQ(bi.base_fee, 7);
     EXPECT_EQ(bi.timestamp, 1000);
@@ -76,7 +76,7 @@ TEST(statetest_loader, block_info_dec)
 
     const auto bi = test::from_json<state::BlockInfo>(json::json::parse(input));
     EXPECT_EQ(bi.coinbase, "Q000000000000000000000000000000000000000000000000000000002adc25665018aa1fe0e6bc666dac8fc2697ff9ba"_address);
-    EXPECT_EQ(bi.prev_randao, 0x00_bytes32);
+    EXPECT_EQ(bi.prev_randao, 0x00_bytes64);
     EXPECT_EQ(bi.gas_limit, 100000000000000000);
     EXPECT_EQ(bi.base_fee, 7);
     EXPECT_EQ(bi.timestamp, 1000);
@@ -97,7 +97,7 @@ TEST(statetest_loader, block_info_0_random)
 
     const auto bi = test::from_json<state::BlockInfo>(json::json::parse(input));
     EXPECT_EQ(bi.coinbase, "Q000000000000000000000000000000000000000000000000000000001111111111111111111111111111111111111111"_address);
-    EXPECT_EQ(bi.prev_randao, 0x00_bytes32);
+    EXPECT_EQ(bi.prev_randao, 0x00_bytes64);
     EXPECT_EQ(bi.gas_limit, 0x0);
     EXPECT_EQ(bi.base_fee, 7);
     EXPECT_EQ(bi.timestamp, 0);
@@ -131,7 +131,7 @@ TEST(statetest_loader, block_info_withdrawals)
 
     const auto bi = test::from_json<state::BlockInfo>(json::json::parse(input));
     EXPECT_EQ(bi.coinbase, "Q000000000000000000000000000000000000000000000000000000001111111111111111111111111111111111111111"_address);
-    EXPECT_EQ(bi.prev_randao, 0x00_bytes32);
+    EXPECT_EQ(bi.prev_randao, 0x00_bytes64);
     EXPECT_EQ(bi.gas_limit, 0x0);
     EXPECT_EQ(bi.base_fee, 7);
     EXPECT_EQ(bi.timestamp, 0);

@@ -246,7 +246,7 @@ TEST(statetest_loader, tx_access_list)
     EXPECT_EQ(tx.access_list[0].first, "Qac01"_address);
     EXPECT_EQ(tx.access_list[0].second.size(), 0);
     EXPECT_EQ(tx.access_list[1].first, "Qac02"_address);
-    EXPECT_EQ(tx.access_list[1].second, (std::vector{0xfe_bytes32, 0x00_bytes32}));
+    EXPECT_EQ(tx.access_list[1].second, (std::vector{0xfe_bytes64, 0x00_bytes64}));
     EXPECT_EQ(tx.nonce, 0);
     EXPECT_EQ(tx.public_key,
         qrvmc::from_hex(

@@ -79,7 +79,7 @@ hash256 from_json<hash256>(const json::json& j)
     // Special case to handle "0". Required by exec-spec-tests.
     // TODO: Get rid of it.
     if (j.is_string() && (j == "0" || j == "0x0"))
-        return 0x00_bytes32;
+        return 0x00_bytes64;
     else
         return qrvmc::from_hex<hash256>(j.get<std::string>()).value();
 }
@@ -99,9 +99,9 @@ state::AccessList from_json<state::AccessList>(const json::json& j)
     state::AccessList o;
     for (const auto& a : j)
     {
-        std::vector<bytes32> storage_access_list;
+        std::vector<bytes64> storage_access_list;
         for (const auto& storage_key : a.at("storageKeys"))
-            storage_access_list.emplace_back(from_json<bytes32>(storage_key));
+            storage_access_list.emplace_back(from_json<bytes64>(storage_key));
         o.emplace_back(from_json<address>(a.at("address")), std::move(storage_access_list));
     }
     return o;
@@ -149,9 +149,9 @@ inline uint64_t calculate_current_base_fee_eip1559(
 template <>
 state::BlockInfo from_json<state::BlockInfo>(const json::json& j)
 {
-    qrvmc::bytes32 random;
+    qrvmc::bytes64 random;
     if (const auto prev_randao_it = j.find("currentRandom"); prev_randao_it != j.end())
-        random = from_json<bytes32>(*prev_randao_it);
+        random = from_json<bytes64>(*prev_randao_it);
 
     uint64_t base_fee = 0;
     if (j.contains("currentBaseFee"))
@@ -194,9 +194,9 @@ state::State from_json<state::State>(const json::json& j)
         {
             for (const auto& [j_key, j_value] : storage_it->items())
             {
-                const auto value = from_json<bytes32>(j_value);
+                const auto value = from_json<bytes64>(j_value);
                 acc.storage.insert(
-                    {from_json<bytes32>(j_key), {.current = value, .original = value}});
+                    {from_json<bytes64>(j_key), {.current = value, .original = value}});
             }
         }
     }

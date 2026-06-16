@@ -540,7 +540,7 @@ TEST_P(qrvm, return_empty_buffer_at_offset_0)
 TEST_P(qrvm, return_empty_buffer_at_high_offset)
 {
     host.tx_context.block_prev_randao =
-        0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1_bytes32;
+        0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1_bytes64;
 
     execute(push(0) + OP_PREVRANDAO + OP_RETURN);
     EXPECT_STATUS(QRVMC_SUCCESS);

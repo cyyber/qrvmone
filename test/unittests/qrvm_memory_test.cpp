@@ -70,7 +70,7 @@ TEST_P(qrvm, memory_grow_mstore8)
 
     constexpr size_t size = 4 * 1024 + 256 + 1;
 
-    execute(code, qrvmc::bytes32{size});
+    execute(code, qrvmc::bytes64{size});
     EXPECT_STATUS(QRVMC_SUCCESS);
     ASSERT_EQ(result.output_size, ((size + 63) / 64) * 64);
 

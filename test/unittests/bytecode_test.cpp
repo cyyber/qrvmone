@@ -26,20 +26,20 @@ TEST(bytecode, push_int)
     EXPECT_EQ(push(0xffffffffffffffff), "67ffffffffffffffff");
 }
 
-TEST(bytecode, push_bytes32)
+TEST(bytecode, push_bytes64)
 {
-    // qrvmc::bytes32 is 64 bytes after the 64-byte VM-word migration. The
+    // qrvmc::bytes64 is 64 bytes after the 64-byte VM-word migration. The
     // helper trims leading zeros and then emits the smallest PUSHn that fits.
     // PUSH64 = 0x9f (encoded as OP_PUSH1 + 63), PUSH63 = 0x9e, etc.
     // PUSH64 (0x9f) + 64 bytes: 0xee at byte 0, rest zero. 130 hex chars.
-    EXPECT_EQ(push(qrvmc::bytes32{{0xee, 0x00}}),
+    EXPECT_EQ(push(qrvmc::bytes64{{0xee, 0x00}}),
         "9fee000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
     // PUSH63 (0x9e) + 63 bytes: 0xee at byte 0, rest zero. 128 hex chars.
-    EXPECT_EQ(push(qrvmc::bytes32{{0x00, 0xee}}),
+    EXPECT_EQ(push(qrvmc::bytes64{{0x00, 0xee}}),
         "9eee0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
-    EXPECT_EQ(push(qrvmc::bytes32{}), "6000");
-    EXPECT_EQ(push(qrvmc::bytes32{0xee}), "60ee");
-    EXPECT_EQ(push(qrvmc::bytes32{0xd0d1}), "61d0d1");
+    EXPECT_EQ(push(qrvmc::bytes64{}), "6000");
+    EXPECT_EQ(push(qrvmc::bytes64{0xee}), "60ee");
+    EXPECT_EQ(push(qrvmc::bytes64{0xd0d1}), "61d0d1");
 }
 
 TEST(bytecode, push_explicit_opcode)

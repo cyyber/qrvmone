@@ -11,16 +11,16 @@ namespace qrvmone::state
 {
 using qrvmc::address;
 using qrvmc::bytes;
-using qrvmc::bytes32;
+using qrvmc::bytes64;
 
 /// The representation of the account storage value.
 struct StorageValue
 {
     /// The current value.
-    bytes32 current = {};
+    bytes64 current = {};
 
     /// The original value.
-    bytes32 original = {};
+    bytes64 original = {};
 
     qrvmc_access_status access_status = QRVMC_ACCESS_COLD;
 };
@@ -38,7 +38,7 @@ struct Account
     intx::uint256 balance = {};
 
     /// The account storage map.
-    std::unordered_map<bytes32, StorageValue> storage = {};
+    std::unordered_map<bytes64, StorageValue> storage = {};
 
     /// The account code.
     bytes code = {};

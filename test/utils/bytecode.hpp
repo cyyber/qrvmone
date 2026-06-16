@@ -15,7 +15,7 @@ struct bytecode;
 
 inline bytecode push(uint64_t n);
 inline bytecode push(qrvmc::address addr);
-inline bytecode push(qrvmc::bytes32 bs);
+inline bytecode push(qrvmc::bytes64 bs);
 
 using enum qrvmone::Opcode;
 using qrvmone::Opcode;
@@ -40,7 +40,7 @@ struct bytecode : bytes
 
     bytecode(qrvmc::address addr) : bytes{push(addr)} {}
 
-    bytecode(qrvmc::bytes32 bs) : bytes{push(bs)} {}
+    bytecode(qrvmc::bytes64 bs) : bytes{push(bs)} {}
 
     operator bytes_view() const noexcept { return {data(), size()}; }
 };
@@ -143,11 +143,11 @@ inline bytecode push(uint64_t n)
     return push(data);
 }
 
-inline bytecode push(qrvmc::bytes32 bs)
+inline bytecode push(qrvmc::bytes64 bs)
 {
     bytes_view data{bs.bytes, sizeof(bs.bytes)};
     // Trim leading zeros down to the smallest PUSHn that still fits the value.
-    // Cap the trim at sizeof(bytes32)-1 so an all-zero value still emits PUSH1 0.
+    // Cap the trim at sizeof(bytes64)-1 so an all-zero value still emits PUSH1 0.
     return push(data.substr(std::min(data.find_first_not_of(uint8_t{0}), sizeof(bs.bytes) - 1)));
 }
 

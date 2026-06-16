@@ -25,7 +25,7 @@ TEST_P(qrvm, sstore_pop_stack)
     EXPECT_GAS_USED(QRVMC_SUCCESS, 2224);
     EXPECT_EQ(bytes_view(result.output_data, result.output_size), bytes{0x00});
     EXPECT_EQ(
-        host.accounts[msg.recipient].storage.find(0x01_bytes32)->second.current, 0x00_bytes32);
+        host.accounts[msg.recipient].storage.find(0x01_bytes64)->second.current, 0x00_bytes64);
 }
 
 TEST_P(qrvm, sload_cost)
@@ -65,7 +65,7 @@ TEST_P(qrvm, sstore_cost)
 {
     auto& storage = host.accounts[msg.recipient].storage;
 
-    constexpr auto v1 = 0x01_bytes32;
+    constexpr auto v1 = 0x01_bytes64;
 
     for (auto r : {QRVMC_ZOND})
     {
@@ -114,7 +114,7 @@ TEST_P(qrvm, sstore_cost)
 
         // Modified again:
         storage.clear();
-        storage[v1] = {v1, 0x00_bytes32};
+        storage[v1] = {v1, 0x00_bytes64};
         execute(sstore(1, 2));
         EXPECT_EQ(result.status_code, QRVMC_SUCCESS);
         EXPECT_EQ(gas_used, 2206);
@@ -145,11 +145,11 @@ TEST_P(qrvm, sstore_cost_net_gas_metering)
 {
     // Follow the table on https://evmc.ethereum.org/storagestatus.html
 
-    static constexpr auto O = 0x000000000000000000_bytes32;
-    static constexpr auto X = 0x00ffffffffffffffff_bytes32;
-    static constexpr auto Y = 0x010000000000000000_bytes32;
-    static constexpr auto Z = 0x010000000000000001_bytes32;
-    static constexpr auto key = 0xde_bytes32;
+    static constexpr auto O = 0x000000000000000000_bytes64;
+    static constexpr auto X = 0x00ffffffffffffffff_bytes64;
+    static constexpr auto Y = 0x010000000000000000_bytes64;
+    static constexpr auto Z = 0x010000000000000001_bytes64;
+    static constexpr auto key = 0xde_bytes64;
 
     static constexpr int64_t b = 6;  // Cost of other instructions.
 
@@ -161,8 +161,8 @@ TEST_P(qrvm, sstore_cost_net_gas_metering)
         int64_t clear = -1;
     };
 
-    const auto test = [this](const qrvmc::bytes32& original, const qrvmc::bytes32& current,
-                          const qrvmc::bytes32& value, int64_t expected_gas_used,
+    const auto test = [this](const qrvmc::bytes64& original, const qrvmc::bytes64& current,
+                          const qrvmc::bytes64& value, int64_t expected_gas_used,
                           int64_t expected_gas_refund) {
         auto& storage_entry = host.accounts[msg.recipient].storage[key];
         storage_entry.original = original;

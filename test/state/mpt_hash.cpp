@@ -29,7 +29,7 @@ hash256 mpt_hash(const std::unordered_map<address, Account>& accounts)
     MPT trie;
     for (const auto& [addr, acc] : accounts)
     {
-        // After the 64-byte VM-word migration hash256 (= bytes32) is 64
+        // After the 64-byte VM-word migration hash256 (= bytes64) is 64
         // bytes wide with the 32-byte keccak hash sitting in the low
         // half. Account-RLP storage_root/code_hash fields stay 32 bytes
         // wide per the Ethereum spec, so explicitly slice to the low

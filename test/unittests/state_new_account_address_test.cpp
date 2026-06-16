@@ -13,8 +13,8 @@ inline constexpr uint64_t nonces[] = {0, 1, 0x80, 0xffffffffffffffff};
 inline constexpr address senders[] = {
     "Q00"_address, "Q01"_address, "Q000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000"_address};
 inline const bytes init_codes[] = {bytes{}, bytes{0xFE}};
-inline constexpr bytes32 salts[] = {
-    0x00_bytes32, 0xe75fb554e433e03763a1560646ee22dcb74e5274b34c5ad644e7c0f619a7e1d0_bytes32};
+inline constexpr bytes64 salts[] = {
+    0x00_bytes64, 0xe75fb554e433e03763a1560646ee22dcb74e5274b34c5ad644e7c0f619a7e1d0_bytes64};
 
 // Expected addresses regenerated post-migration (64-byte address +
 // 64-byte VM word). compute_new_account_address now Keccak-512s the

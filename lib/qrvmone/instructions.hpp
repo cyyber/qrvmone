@@ -51,11 +51,11 @@ inline qrvmc_address trunc_to_addr(const uint512& x) noexcept
     return addr;
 }
 
-/// Store right-aligned uint512 value into qrvmc_bytes32 (64 bytes, big-endian).
+/// Store right-aligned uint512 value into qrvmc_bytes64 (64 bytes, big-endian).
 /// Lower 256 bits go into bytes 32-63. Upper 256 bits into bytes 0-31.
-inline qrvmc::bytes32 store_uint(const uint512& x) noexcept
+inline qrvmc::bytes64 store_uint(const uint512& x) noexcept
 {
-    qrvmc::bytes32 result{};
+    qrvmc::bytes64 result{};
     uint512 tmp = x;
     for (int i = 63; i >= 0; --i)
     {
@@ -658,7 +658,7 @@ inline void blockhash(StackTop stack, ExecutionState& state) noexcept
     const auto lower_bound = std::max(upper_bound - 256, decltype(upper_bound){0});
     const auto n = static_cast<int64_t>(number);
     const auto header =
-        (number < upper_bound && n >= lower_bound) ? state.host.get_block_hash(n) : qrvmc::bytes32{};
+        (number < upper_bound && n >= lower_bound) ? state.host.get_block_hash(n) : qrvmc::bytes64{};
     number = intx::be::load<uint512>(header);
 }
 
@@ -916,9 +916,9 @@ inline Result log(StackTop stack, int64_t gas_left, ExecutionState& state) noexc
     if ((gas_left -= cost) < 0)
         return {QRVMC_OUT_OF_GAS, gas_left};
 
-    std::array<qrvmc::bytes32, NumTopics> topics;  // NOLINT(cppcoreguidelines-pro-type-member-init)
+    std::array<qrvmc::bytes64, NumTopics> topics;  // NOLINT(cppcoreguidelines-pro-type-member-init)
     for (auto& topic : topics)
-        topic = intx::be::store<qrvmc::bytes32>(stack.pop());
+        topic = intx::be::store<qrvmc::bytes64>(stack.pop());
 
     const auto data = s != 0 ? &state.memory[o] : nullptr;
     state.host.emit_log(state.msg->recipient, data, s, topics.data(), NumTopics);

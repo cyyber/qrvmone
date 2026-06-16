@@ -156,8 +156,8 @@ TEST_P(qrvm, eip2929_sload_cold)
     rev = QRVMC_ZOND;
     const auto code = push(1) + OP_SLOAD;
 
-    const qrvmc::bytes32 key{1};
-    host.accounts[msg.recipient].storage[key] = qrvmc::bytes32{2};
+    const qrvmc::bytes64 key{1};
+    host.accounts[msg.recipient].storage[key] = qrvmc::bytes64{2};
     ASSERT_EQ(host.accounts[msg.recipient].storage[key].access_status, QRVMC_ACCESS_COLD);
     execute(2103, code);
     EXPECT_GAS_USED(QRVMC_SUCCESS, 2103);
@@ -171,8 +171,8 @@ TEST_P(qrvm, eip2929_sload_cold)
 TEST_P(qrvm, eip2929_sload_two_slots)
 {
     rev = QRVMC_ZOND;
-    const qrvmc::bytes32 key0{0};
-    const qrvmc::bytes32 key1{1};
+    const qrvmc::bytes64 key0{0};
+    const qrvmc::bytes64 key1{1};
     const auto code = push(key0) + OP_SLOAD + OP_POP + push(key1) + OP_SLOAD + OP_POP;
 
     execute(30000, code);
@@ -186,8 +186,8 @@ TEST_P(qrvm, eip2929_sload_warm)
     rev = QRVMC_ZOND;
     const auto code = push(1) + OP_SLOAD;
 
-    const qrvmc::bytes32 key{1};
-    host.accounts[msg.recipient].storage[key] = {qrvmc::bytes32{2}, QRVMC_ACCESS_WARM};
+    const qrvmc::bytes64 key{1};
+    host.accounts[msg.recipient].storage[key] = {qrvmc::bytes64{2}, QRVMC_ACCESS_WARM};
     ASSERT_EQ(host.accounts[msg.recipient].storage[key].access_status, QRVMC_ACCESS_WARM);
     execute(103, code);
     EXPECT_GAS_USED(QRVMC_SUCCESS, 103);
@@ -202,18 +202,18 @@ TEST_P(qrvm, eip2929_sstore_modify_cold)
     rev = QRVMC_ZOND;
     const auto code = sstore(1, 3);
 
-    const qrvmc::bytes32 key{1};
-    host.accounts[msg.recipient].storage[key] = qrvmc::bytes32{2};
+    const qrvmc::bytes64 key{1};
+    host.accounts[msg.recipient].storage[key] = qrvmc::bytes64{2};
     execute(5006, code);
     EXPECT_GAS_USED(QRVMC_SUCCESS, 5006);
-    EXPECT_EQ(host.accounts[msg.recipient].storage[key].current, qrvmc::bytes32{3});
+    EXPECT_EQ(host.accounts[msg.recipient].storage[key].current, qrvmc::bytes64{3});
     EXPECT_EQ(host.accounts[msg.recipient].storage[key].access_status, QRVMC_ACCESS_WARM);
 
-    host.accounts[msg.recipient].storage[key] = qrvmc::bytes32{2};
+    host.accounts[msg.recipient].storage[key] = qrvmc::bytes64{2};
     execute(5005, code);
     EXPECT_GAS_USED(QRVMC_OUT_OF_GAS, 5005);
     // The storage will be modified anyway, because the cost is checked after.
-    EXPECT_EQ(host.accounts[msg.recipient].storage[key].current, qrvmc::bytes32{3});
+    EXPECT_EQ(host.accounts[msg.recipient].storage[key].current, qrvmc::bytes64{3});
     EXPECT_EQ(host.accounts[msg.recipient].storage[key].access_status, QRVMC_ACCESS_WARM);
 }
 

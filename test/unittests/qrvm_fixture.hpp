@@ -21,7 +21,7 @@
     EXPECT_EQ(gas_used, GAS_USED)
 
 // Compare the 32-byte `result.output_data` against a big-endian uint256
-// encoding of X. With the 64-byte-word migration `qrvmc_bytes32` is 64
+// encoding of X. With the 64-byte-word migration `qrvmc_bytes64` is 64
 // bytes wide, which can't accept an intx uint256 store; stage the
 // uint256 into a local 32-byte buffer instead.
 #define EXPECT_OUTPUT_INT(X)                                                      \

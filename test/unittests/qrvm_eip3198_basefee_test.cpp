@@ -14,7 +14,7 @@ TEST_P(qrvm, basefee_nominal_case)
 {
     // https://eips.ethereum.org/EIPS/eip-3198#nominal-case
     rev = QRVMC_ZOND;
-    host.tx_context.block_base_fee = qrvmc::bytes32{7};
+    host.tx_context.block_base_fee = qrvmc::bytes64{7};
 
     execute(bytecode{} + OP_BASEFEE + OP_STOP);
     EXPECT_GAS_USED(QRVMC_SUCCESS, 2);

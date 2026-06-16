@@ -102,7 +102,7 @@ TEST(statetest_loader, load_minimal_test)
     EXPECT_EQ(st.block.timestamp, 0);
     EXPECT_EQ(st.block.gas_limit, 0);
     EXPECT_EQ(st.block.coinbase, address{});
-    EXPECT_EQ(st.block.prev_randao, bytes32{});
+    EXPECT_EQ(st.block.prev_randao, bytes64{});
     EXPECT_EQ(st.block.base_fee, 0);
     EXPECT_EQ(st.multi_tx.kind, test::TestMultiTransaction::Kind::eip1559);
     EXPECT_EQ(st.multi_tx.data, bytes{});

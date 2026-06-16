@@ -23,7 +23,7 @@ TEST_P(qrvm, create_initcode_limit)
             rev = r;
             for (const auto s : {initcode_size_limit, initcode_size_limit + 1})
             {
-                execute(c, qrvmc::uint256be{s});
+                execute(c, qrvmc::uint512be{s});
                 if (rev >= QRVMC_ZOND && s > initcode_size_limit)
                 {
                     EXPECT_STATUS(QRVMC_OUT_OF_GAS);
@@ -41,10 +41,10 @@ TEST_P(qrvm, create_initcode_gas_cost)
 {
     rev = QRVMC_ZOND;
     const auto code = create().input(0, calldataload(0));
-    execute(100000, code, qrvmc::uint256be{initcode_size_limit});
+    execute(100000, code, qrvmc::uint512be{initcode_size_limit});
     EXPECT_STATUS(QRVMC_SUCCESS);
     EXPECT_GT(gas_used, 0);
-    execute(1, code, qrvmc::uint256be{initcode_size_limit});
+    execute(1, code, qrvmc::uint512be{initcode_size_limit});
     EXPECT_STATUS(QRVMC_OUT_OF_GAS);
 }
 
@@ -52,9 +52,9 @@ TEST_P(qrvm, create2_initcode_gas_cost)
 {
     rev = QRVMC_ZOND;
     const auto code = create2().input(0, calldataload(0));
-    execute(100000, code, qrvmc::uint256be{initcode_size_limit});
+    execute(100000, code, qrvmc::uint512be{initcode_size_limit});
     EXPECT_STATUS(QRVMC_SUCCESS);
     EXPECT_GT(gas_used, 0);
-    execute(1, code, qrvmc::uint256be{initcode_size_limit});
+    execute(1, code, qrvmc::uint512be{initcode_size_limit});
     EXPECT_STATUS(QRVMC_OUT_OF_GAS);
 }

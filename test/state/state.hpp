@@ -84,12 +84,12 @@ struct BlockInfo
     int64_t timestamp = 0;
     int64_t gas_limit = 0;
     address coinbase;
-    bytes32 prev_randao;
+    bytes64 prev_randao;
     uint64_t base_fee = 0;
     std::vector<Withdrawal> withdrawals;
 };
 
-using AccessList = std::vector<std::pair<address, std::vector<bytes32>>>;
+using AccessList = std::vector<std::pair<address, std::vector<bytes64>>>;
 
 struct Transaction
 {
