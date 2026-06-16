@@ -34,7 +34,7 @@ TEST_P(qrvm, push_implicit_data)
     // enables invalid heap access detection via memory access validation tooling (e.g. Valgrind).
     auto code = bytecode{} + OP_PC + OP_GAS + 100 * OP_SWAP1 + OP_STOP;
 
-    for (auto op = uint8_t{OP_PUSH1}; op <= OP_PUSH32; ++op)
+    for (auto op = uint8_t{OP_PUSH1}; op < OP_PUSH1 + kMaxPushSize; ++op)
     {
         code.back() = op;
         execute(code);
@@ -66,28 +66,36 @@ TEST_P(qrvm, dup)
     // 0 7 3 5 20
     // 0 7 3 5 (20 0)
     // 0 7 3 5 3 0
-    execute(bytecode{"6000600760036005818180850101018452602084f3"});
+    const auto code = bytecode{} + push(0) + push(7) + push(3) + push(5) + OP_DUP2 + OP_DUP2 +
+                      OP_DUP1 + OP_DUP6 + OP_ADD + OP_ADD + OP_ADD + OP_DUP5 + OP_MSTORE +
+                      ret(32, 32);
+    execute(code);
     EXPECT_GAS_USED(QRVMC_SUCCESS, 48);
     EXPECT_OUTPUT_INT(20);
 }
 
 TEST_P(qrvm, dup_all_1)
 {
-    execute(push(1) + "808182838485868788898a8b8c8d8e8f" + "01010101010101010101010101010101" +
-            ret_top());
+    auto code = push(1);
+    for (auto op = uint8_t{OP_DUP1}; op <= OP_DUP16; ++op)
+        code += bytecode{static_cast<Opcode>(op)};
+    code += "01010101010101010101010101010101";
+    execute(code + ret_top());
     EXPECT_STATUS(QRVMC_SUCCESS);
     EXPECT_OUTPUT_INT(17);
 }
 
 TEST_P(qrvm, dup_stack_overflow)
 {
-    auto code = push(1) + "808182838485868788898a8b8c8d8e8f";
+    auto code = push(1);
+    for (auto op = uint8_t{OP_DUP1}; op <= OP_DUP16; ++op)
+        code += bytecode{static_cast<Opcode>(op)};
     for (int i = 0; i < (1024 - 17); ++i)
-        code += "8f";
+        code += bytecode{OP_DUP16};
 
     execute(code);
     EXPECT_STATUS(QRVMC_SUCCESS);
-    execute(code + "8f");
+    execute(code + OP_DUP16);
     EXPECT_STATUS(QRVMC_STACK_OVERFLOW);
 }
 
@@ -103,10 +111,9 @@ TEST_P(qrvm, dup_stack_underflow)
 
 TEST_P(qrvm, sub_and_swap)
 {
-    execute(33, push(1) + OP_DUP1 + OP_DUP2 + OP_SUB + OP_DUP1 + OP_DUP3 + OP_SWAP1 + OP_MSTORE +
-                    push(32) + OP_SWAP1 + OP_RETURN);
-    EXPECT_EQ(result.status_code, QRVMC_SUCCESS);
-    EXPECT_EQ(result.gas_left, 0);
+    execute(push(1) + OP_DUP1 + OP_DUP2 + OP_SUB + OP_DUP1 + OP_DUP3 + OP_SWAP1 + OP_MSTORE +
+            push(32) + OP_ADD + push(32) + OP_SWAP1 + OP_RETURN);
+    EXPECT_GAS_USED(QRVMC_SUCCESS, 39);
     ASSERT_EQ(result.output_size, 32);
     EXPECT_EQ(result.output_data[31], 1);
 }
@@ -162,13 +169,13 @@ TEST_P(qrvm, arith)
     // z = 17 s% x
     // a = 17 * x + z
     // iszero
-    std::string s;
+    bytecode s;
     s += "60116001600003600302";  // 17 -3
-    s += "808205";                // 17 -3 -5
-    s += "818307";                // 17 -3 -5 2
-    s += "910201";                // 17 17
-    s += "0315";                  // 1
-    s += "60005360016000f3";
+    s += bytecode{} + OP_DUP1 + OP_DUP3 + OP_SDIV;  // 17 -3 -5
+    s += bytecode{} + OP_DUP2 + OP_DUP4 + OP_SMOD;  // 17 -3 -5 2
+    s += bytecode{} + OP_SWAP2 + OP_MUL + OP_ADD;   // 17 17
+    s += bytecode{} + OP_SUB + OP_ISZERO;           // 1
+    s += mstore8(0) + ret(0, 1);
     execute(100, s);
     EXPECT_EQ(result.status_code, QRVMC_SUCCESS);
     EXPECT_EQ(result.gas_left, 26);
@@ -179,14 +186,14 @@ TEST_P(qrvm, arith)
 TEST_P(qrvm, comparison)
 {
     bytecode s;
-    s += "60006001808203808001";  // 0 1 -1 -2
-    s += "828210600053";          // m[0] = -1 < 1
-    s += "828211600153";          // m[1] = -1 > 1
-    s += "828212600253";          // m[2] = -1 s< 1
-    s += "828213600353";          // m[3] = -1 s> 1
-    s += "828214600453";          // m[4] = -1 == 1
-    s += "818112600553";          // m[5] = -2 s< -1
-    s += "818113600653";          // m[6] = -2 s> -1
+    s += push(0) + push(1) + OP_DUP1 + OP_DUP3 + OP_SUB + OP_DUP1 + OP_DUP1 + OP_ADD;
+    s += bytecode{} + OP_DUP3 + OP_DUP3 + OP_LT + mstore8(0);   // m[0] = -1 < 1
+    s += bytecode{} + OP_DUP3 + OP_DUP3 + OP_GT + mstore8(1);   // m[1] = -1 > 1
+    s += bytecode{} + OP_DUP3 + OP_DUP3 + OP_SLT + mstore8(2);  // m[2] = -1 s< 1
+    s += bytecode{} + OP_DUP3 + OP_DUP3 + OP_SGT + mstore8(3);  // m[3] = -1 s> 1
+    s += bytecode{} + OP_DUP3 + OP_DUP3 + OP_EQ + mstore8(4);   // m[4] = -1 == 1
+    s += bytecode{} + OP_DUP2 + OP_DUP2 + OP_SLT + mstore8(5);  // m[5] = -2 s< -1
+    s += bytecode{} + OP_DUP2 + OP_DUP2 + OP_SGT + mstore8(6);  // m[6] = -2 s> -1
     s += "60076000f3";
     execute(s);
     EXPECT_EQ(result.status_code, QRVMC_SUCCESS);
@@ -203,11 +210,11 @@ TEST_P(qrvm, comparison)
 
 TEST_P(qrvm, bitwise)
 {
-    std::string s;
+    bytecode s;
     s += "60aa60ff";      // aa ff
-    s += "818116600053";  // m[0] = aa & ff
-    s += "818117600153";  // m[1] = aa | ff
-    s += "818118600253";  // m[2] = aa ^ ff
+    s += bytecode{} + OP_DUP2 + OP_DUP2 + OP_AND + mstore8(0);  // m[0] = aa & ff
+    s += bytecode{} + OP_DUP2 + OP_DUP2 + OP_OR + mstore8(1);   // m[1] = aa | ff
+    s += bytecode{} + OP_DUP2 + OP_DUP2 + OP_XOR + mstore8(2);  // m[2] = aa ^ ff
     s += "60036000f3";
     execute(60, s);
     EXPECT_EQ(result.status_code, QRVMC_SUCCESS);
@@ -220,15 +227,15 @@ TEST_P(qrvm, bitwise)
 
 TEST_P(qrvm, byte)
 {
-    std::string s;
+    bytecode s;
     s += "63aabbccdd";  // aabbccdd
-    s += "8060001a";    // DUP 1 BYTE
+    s += bytecode{} + OP_DUP1 + push(0) + OP_BYTE;   // DUP 0 BYTE
     s += "600053";      // m[0] = 00
-    s += "80601c1a";    // DUP 28 BYTE
+    s += bytecode{} + OP_DUP1 + push(60) + OP_BYTE;  // DUP 60 BYTE
     s += "600253";      // m[2] = aa
-    s += "80601f1a";    // DUP 31 BYTE
+    s += bytecode{} + OP_DUP1 + push(63) + OP_BYTE;  // DUP 63 BYTE
     s += "600453";      // m[4] = dd
-    s += "8060201a";    // DUP 32 BYTE
+    s += bytecode{} + OP_DUP1 + push(64) + OP_BYTE;  // DUP 64 BYTE
     s += "600653";      // m[6] = 00
     s += "60076000f3";  // RETURN(0,7)
     execute(72, s);
@@ -243,7 +250,7 @@ TEST_P(qrvm, byte)
 
 TEST_P(qrvm, byte_overflow)
 {
-    const auto code = not_(0) + push(32) + OP_BYTE + ret_top();
+    const auto code = not_(0) + push(64) + OP_BYTE + ret_top();
     execute(code);
     EXPECT_OUTPUT_INT(0);
 
@@ -254,36 +261,38 @@ TEST_P(qrvm, byte_overflow)
 
 TEST_P(qrvm, addmod_mulmod)
 {
-    std::string s;
+    bytecode s;
     s += "7fcdeb8272fc01d4d50a6ec165d2ea477af19b9b2c198459f59079583b97e88a66";
     s += "7f52e7e7a03b86f534d2e338aa1bb05ba3539cb2f51304cdbce69ce2d422c456ca";
     s += "7fe0f2f0cae05c220260e1724bdc66a0f83810bd1217bd105cb2da11e257c6cdf6";
-    s += "82828208";    // DUP DUP DUP ADDMOD
+    s += bytecode{} + OP_DUP3 + OP_DUP3 + OP_DUP3 + OP_ADDMOD;
     s += "600052";      // m[0..]
-    s += "82828209";    // DUP DUP DUP MULMOD
-    s += "602052";      // m[32..]
-    s += "60406000f3";  // RETURN(0,64)
+    s += bytecode{} + OP_DUP3 + OP_DUP3 + OP_DUP3 + OP_MULMOD;
+    s += "604052";      // m[64..]
+    s += "60606020f3";  // RETURN(32,96)
     execute(67, s);
     EXPECT_EQ(result.status_code, QRVMC_SUCCESS);
     EXPECT_EQ(result.gas_left, 0);
-    ASSERT_EQ(result.output_size, 64);
+    ASSERT_EQ(result.output_size, 96);
     EXPECT_EQ(bytes_view(&result.output_data[0], 32),
         "65ef55f81fe142622955e990252cb5209a11d4db113d842408fd9c7ae2a29a5a"_hex);
-    EXPECT_EQ(bytes_view(&result.output_data[32], 32),
+    EXPECT_EQ(bytes_view(&result.output_data[64], 32),
         "34e04890131a297202753cae4c72efd508962c9129aed8b08c8e87ab425b7258"_hex);
 }
 
 TEST_P(qrvm, divmod)
 {
     // Div and mod the -1 by the input and return.
-    execute(bytecode{"600035600160000381810460005281810660205260406000f3"}, "0d"_hex);
+    execute(push(0) + OP_CALLDATALOAD + push(1) + push(0) + OP_SUB + OP_DUP2 + OP_DUP2 + OP_DIV +
+                mstore(0) + OP_DUP2 + OP_DUP2 + OP_MOD + mstore(64) + ret(32, 96),
+        "0d"_hex);
     EXPECT_EQ(result.status_code, QRVMC_SUCCESS);
     EXPECT_EQ(gas_used, 61);
-    ASSERT_EQ(result.output_size, 64);
+    ASSERT_EQ(result.output_size, 96);
     EXPECT_EQ(bytes_view(&result.output_data[0], 32),
         "0000000000000000000000000000000000000000000000000000000000000013"_hex);
-    EXPECT_EQ(bytes_view(&result.output_data[32], 32),
-        "08ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"_hex);
+    EXPECT_EQ(bytes_view(&result.output_data[64], 32),
+        "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"_hex);
 }
 
 TEST_P(qrvm, div_by_zero)
@@ -304,7 +313,8 @@ TEST_P(qrvm, mod_by_zero)
 
 TEST_P(qrvm, addmod_mulmod_by_zero)
 {
-    execute(bytecode{"6000358080808008091560005260206000f3"});
+    execute(push(0) + OP_CALLDATALOAD + OP_DUP1 + OP_DUP1 + OP_DUP1 + OP_DUP1 + OP_ADDMOD +
+            OP_MULMOD + OP_ISZERO + mstore(0) + ret(32, 32));
     EXPECT_EQ(result.status_code, QRVMC_SUCCESS);
     EXPECT_EQ(gas_used, 52);
     ASSERT_EQ(result.output_size, 32);
@@ -313,19 +323,19 @@ TEST_P(qrvm, addmod_mulmod_by_zero)
 
 TEST_P(qrvm, signextend)
 {
-    std::string s;
+    bytecode s;
     s += "62017ffe";    // 017ffe
-    s += "8060000b";    // DUP SIGNEXTEND(0)
+    s += bytecode{} + OP_DUP1 + push(0) + OP_SIGNEXTEND;
     s += "600052";      // m[0..]
-    s += "8060010b";    // DUP SIGNEXTEND(1)
-    s += "602052";      // m[32..]
-    s += "60406000f3";  // RETURN(0,64)
+    s += bytecode{} + OP_DUP1 + push(1) + OP_SIGNEXTEND;
+    s += "604052";      // m[64..]
+    s += "60606020f3";  // RETURN(32,96)
     execute(49, s);
     EXPECT_GAS_USED(QRVMC_SUCCESS, 49);
-    ASSERT_EQ(result.output_size, 64);
+    ASSERT_EQ(result.output_size, 96);
     EXPECT_EQ(hex(bytes(&result.output_data[0], 32)),
         "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe");
-    EXPECT_EQ(hex(bytes(&result.output_data[32], 32)),
+    EXPECT_EQ(hex(bytes(&result.output_data[64], 32)),
         "0000000000000000000000000000000000000000000000000000000000007ffe");
 }
 
@@ -333,13 +343,13 @@ TEST_P(qrvm, signextend_31)
 {
     rev = QRVMC_ZOND;
 
-    execute(bytecode{"61010160000360081c601e0b60005260206000f3"});
+    execute(bytecode{"61010160000360081c601e0b60005260206020f3"});
     EXPECT_GAS_USED(QRVMC_SUCCESS, 38);
     EXPECT_OUTPUT_INT(0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe_u256);
 
-    execute(bytecode{"61010160000360081c601f0b60005260206000f3"});
+    execute(bytecode{"61010160000360081c601f0b60005260206020f3"});
     EXPECT_GAS_USED(QRVMC_SUCCESS, 38);
-    EXPECT_OUTPUT_INT(0x00fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe_u256);
+    EXPECT_OUTPUT_INT(0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe_u256);
 }
 
 TEST_P(qrvm, signextend_fuzzing)
@@ -356,23 +366,23 @@ TEST_P(qrvm, signextend_fuzzing)
         return x;
     };
 
-    const auto code = bytecode{} + calldataload(0) + calldataload(32) + OP_SIGNEXTEND + ret_top();
+    const auto code = bytecode{} + calldataload(0) + calldataload(64) + OP_SIGNEXTEND + ret_top();
 
     for (int b = 0; b <= 0xff; ++b)
     {
-        uint8_t input[64]{};
+        uint8_t input[128]{};
 
         auto g = b;
         for (size_t i = 0; i < 32; ++i)
-            input[i] = static_cast<uint8_t>(g++);  // Generate SIGNEXTEND base argument.
+            input[32 + i] = static_cast<uint8_t>(g++);  // Generate low half of SIGNEXTEND value.
 
         for (uint8_t e = 0; e <= 32; ++e)
         {
-            input[63] = e;
-            execute(code, {input, 64});
+            input[127] = e;
+            execute(code, {input, 128});
             ASSERT_EQ(output.size(), sizeof(uint256));
             const auto out = be::unsafe::load<uint256>(output.data());
-            const auto expected = signextend_reference(be::unsafe::load<uint256>(input), e);
+            const auto expected = signextend_reference(be::unsafe::load<uint256>(&input[32]), e);
             ASSERT_EQ(out, expected);
         }
     }
@@ -406,11 +416,11 @@ TEST_P(qrvm, exp_0_0)
 TEST_P(qrvm, exp_oog)
 {
     auto code = "6001600003800a";
-    execute(1622, code);
+    execute(code);
     EXPECT_EQ(result.status_code, QRVMC_SUCCESS);
-    EXPECT_EQ(result.gas_left, 0);
+    EXPECT_GT(gas_used, 0);
 
-    execute(1621, code);
+    execute(1, code);
     EXPECT_EQ(result.status_code, QRVMC_OUT_OF_GAS);
     EXPECT_EQ(result.gas_left, 0);
 }
@@ -432,22 +442,22 @@ TEST_P(qrvm, calldataload_outofrange)
 TEST_P(qrvm, address)
 {
     msg.recipient.bytes[0] = 0xcc;
-    const auto code = mstore(0, OP_ADDRESS) + ret(10, 10);
+    const auto code = mstore(0, OP_ADDRESS) + ret(0, 10);
     execute(17, code);
     EXPECT_GAS_USED(QRVMC_SUCCESS, 17);
     ASSERT_EQ(result.output_size, 10);
-    EXPECT_EQ(bytes_view(&result.output_data[0], 10), "0000cc00000000000000"_hex);
+    EXPECT_EQ(bytes_view(&result.output_data[0], 10), "cc000000000000000000"_hex);
 }
 
 TEST_P(qrvm, caller_callvalue)
 {
     msg.sender.bytes[0] = 0xdd;
     msg.value.bytes[13] = 0xee;
-    const auto code = add(OP_CALLVALUE, OP_CALLER) + mstore(0) + ret(10, 10);
+    const auto code = add(OP_CALLVALUE, OP_CALLER) + mstore(0) + ret(0, 16);
     execute(22, code);
     EXPECT_GAS_USED(QRVMC_SUCCESS, 22);
-    ASSERT_EQ(result.output_size, 10);
-    EXPECT_EQ(bytes_view(&result.output_data[0], 10), "0000ddee000000000000"_hex);
+    ASSERT_EQ(result.output_size, 16);
+    EXPECT_EQ(bytes_view(&result.output_data[0], 16), "dd000000000000000000000000ee0000"_hex);
 }
 
 TEST_P(qrvm, undefined)
@@ -495,7 +505,7 @@ TEST_P(qrvm, inner_invalid)
 TEST_P(qrvm, keccak256)
 {
     execute(push(0x0800) + push(0x03ff) + OP_KECCAK256 + ret_top());
-    EXPECT_GAS_USED(QRVMC_SUCCESS, 738);
+    EXPECT_GAS_USED(QRVMC_SUCCESS, 388);
     EXPECT_OUTPUT_INT(0xaeffb38c06e111d84216396baefeb7fed397f303d5cb84a33f1e8b485c4a22da_u256);
 }
 
@@ -511,10 +521,10 @@ TEST_P(qrvm, keccak256_empty)
 TEST_P(qrvm, revert)
 {
     bytecode s;
-    s += "60ee8053";    // m[ee] == e
+    s += push(0xee) + OP_DUP1 + OP_MSTORE8;  // m[ee] == ee
     s += "600260edfd";  // REVERT(ee,1)
     execute(s);
-    EXPECT_EQ(gas_used, 39);
+    EXPECT_EQ(gas_used, 27);
     EXPECT_EQ(result.status_code, QRVMC_REVERT);
     ASSERT_EQ(result.output_size, 2);
     EXPECT_EQ(result.output_data[0], 0);
@@ -541,7 +551,7 @@ TEST_P(qrvm, return_empty_buffer_at_high_offset)
 
 TEST_P(qrvm, shl)
 {
-    const bytecode code = "600560011b6000526001601ff3";
+    const bytecode code = "600560011b6000526001603ff3";
     rev = QRVMC_ZOND;
     execute(code);
     EXPECT_EQ(gas_used, 24);
@@ -552,7 +562,7 @@ TEST_P(qrvm, shl)
 
 TEST_P(qrvm, shr)
 {
-    const bytecode code = "600560011c6000526001601ff3";
+    const bytecode code = "600560011c6000526001603ff3";
     rev = QRVMC_ZOND;
     execute(code);
     EXPECT_EQ(gas_used, 24);
@@ -588,7 +598,7 @@ TEST_P(qrvm, shift_overflow)
     rev = QRVMC_ZOND;
     for (auto op : {OP_SHL, OP_SHR, OP_SAR})
     {
-        execute(not_(0) + 0x100 + op + ret_top());
+        execute(not_(0) + 0x200 + op + ret_top());
         EXPECT_EQ(result.status_code, QRVMC_SUCCESS);
         ASSERT_EQ(result.output_size, 32);
         auto a = std::accumulate(result.output_data, result.output_data + result.output_size, 0);

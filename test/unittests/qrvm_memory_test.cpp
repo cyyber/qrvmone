@@ -24,7 +24,7 @@ TEST_P(qrvm, memory_and_not)
 
 TEST_P(qrvm, msize)
 {
-    execute(29, "60aa6022535960005360016000f3");
+    execute(26, "60aa6022535960005360016000f3");
     EXPECT_EQ(result.status_code, QRVMC_SUCCESS);
     EXPECT_EQ(result.gas_left, 0);
     ASSERT_EQ(result.output_size, 1);
@@ -47,7 +47,7 @@ TEST_P(qrvm, calldatacopy)
     EXPECT_EQ(gas_used, 20);
 
     execute(bytecode{"60ff66fffffffffffffa60003760ff6000f3"});
-    EXPECT_EQ(gas_used, 66);
+    EXPECT_EQ(gas_used, 42);
     ASSERT_EQ(result.output_size, 0xff);
     EXPECT_EQ(std::count(result.output_data, result.output_data + result.output_size, 0), 0xff);
 }
@@ -72,7 +72,7 @@ TEST_P(qrvm, memory_grow_mstore8)
 
     execute(code, qrvmc::bytes32{size});
     EXPECT_STATUS(QRVMC_SUCCESS);
-    ASSERT_EQ(result.output_size, ((size + 31) / 32) * 32);
+    ASSERT_EQ(result.output_size, ((size + 63) / 64) * 64);
 
     for (size_t i = 0; i < size; ++i)
         EXPECT_EQ(result.output_data[i], i % 256);
@@ -204,7 +204,7 @@ TEST_P(qrvm, memory_access)
 
             code += bytecode{t.opcode};
 
-            const auto gas = 8796294610952;
+            const auto gas = 1'000'000'000'000;
             execute(gas, code);
 
             auto case_descr_str = std::ostringstream{};

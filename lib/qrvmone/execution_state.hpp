@@ -20,6 +20,7 @@ class CodeAnalysis;
 }
 
 using uint256 = intx::uint256;
+using uint512 = intx::uint<512>;
 using bytes = std::basic_string<uint8_t>;
 using bytes_view = std::basic_string_view<uint8_t>;
 
@@ -32,15 +33,15 @@ public:
     static constexpr auto limit = 1024;
 
     /// Returns the pointer to the "bottom", i.e. below the stack space.
-    [[nodiscard, clang::no_sanitize("bounds")]] uint256* bottom() noexcept
+    [[nodiscard, clang::no_sanitize("bounds")]] uint512* bottom() noexcept
     {
         return m_stack_space - 1;
     }
 
 private:
     /// The storage allocated for maximum possible number of items.
-    /// Items are aligned to 256 bits for better packing in cache lines.
-    alignas(sizeof(uint256)) uint256 m_stack_space[limit];
+    /// Items are aligned to 512 bits for better packing in cache lines.
+    alignas(sizeof(uint512)) uint512 m_stack_space[limit];
 };
 
 
@@ -91,8 +92,8 @@ public:
     /// @param new_size  New memory size. Must be larger than the current size and multiple of 32.
     void grow(size_t new_size) noexcept
     {
-        // Restriction for future changes. QRVM always has memory size as multiple of 32 bytes.
-        INTX_REQUIRE(new_size % 32 == 0);
+        // Restriction for future changes. QRVM always has memory size as multiple of 64 bytes.
+        INTX_REQUIRE(new_size % 64 == 0);
 
         // Allow only growing memory. Include hint for optimizing compiler.
         INTX_REQUIRE(new_size > m_size);

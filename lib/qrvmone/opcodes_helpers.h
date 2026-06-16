@@ -37,4 +37,36 @@
     case OP_PUSH29:    \
     case OP_PUSH30:    \
     case OP_PUSH31:    \
-    case OP_PUSH32
+    case OP_PUSH32:    \
+    case OP_PUSH33:    \
+    case OP_PUSH34:    \
+    case OP_PUSH35:    \
+    case OP_PUSH36:    \
+    case OP_PUSH37:    \
+    case OP_PUSH38:    \
+    case OP_PUSH39:    \
+    case OP_PUSH40:    \
+    case OP_PUSH41:    \
+    case OP_PUSH42:    \
+    case OP_PUSH43:    \
+    case OP_PUSH44:    \
+    case OP_PUSH45:    \
+    case OP_PUSH46:    \
+    case OP_PUSH47:    \
+    case OP_PUSH48:    \
+    case OP_PUSH49:    \
+    case OP_PUSH50:    \
+    case OP_PUSH51:    \
+    case OP_PUSH52:    \
+    case OP_PUSH53:    \
+    case OP_PUSH54:    \
+    case OP_PUSH55:    \
+    case OP_PUSH56:    \
+    case OP_PUSH57:    \
+    case OP_PUSH58:    \
+    case OP_PUSH59:    \
+    case OP_PUSH60:    \
+    case OP_PUSH61:    \
+    case OP_PUSH62:    \
+    case OP_PUSH63:    \
+    case OP_PUSH64

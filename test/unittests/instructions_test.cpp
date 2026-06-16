@@ -51,9 +51,13 @@ constexpr void validate_traits_of() noexcept
 {
     constexpr auto tr = instr::traits[Op];
 
-    // immediate_size
+    // immediate_size. After the 64-byte-word migration the PUSH family
+    // extends through PUSH64; the PUSH33..PUSH64 range sits at
+    // 0x80..0x9f, one contiguous block with PUSH1..PUSH32 at 0x60..0x7f.
     if constexpr (Op >= OP_PUSH1 && Op <= OP_PUSH32)
         static_assert(tr.immediate_size == Op - OP_PUSH1 + 1);
+    else if constexpr (Op >= OP_PUSH33 && Op <= OP_PUSH64)
+        static_assert(tr.immediate_size == Op - OP_PUSH33 + 33);
     else
         static_assert(tr.immediate_size == 0);
 

@@ -23,13 +23,13 @@ TEST_P(qrvm, grow_memory_with_mload)
     execute(code, 0x00_bytes32);
     EXPECT_GAS_USED(QRVMC_SUCCESS, 57356);
 
-    // Pokes memory offset increasing by 1, memory grows every 32nd "iteration".
+    // Pokes memory offset increasing by 1, memory grows every 64th "iteration".
     execute(code, 0x01_bytes32);
-    EXPECT_GAS_USED(QRVMC_SUCCESS, 57772);
+    EXPECT_GAS_USED(QRVMC_SUCCESS, 57556);
 
-    // Pokes memory offset increasing by 32, memory grows every "iteration".
+    // Pokes memory offset increasing by 32, memory grows every other iteration.
     execute(code, 0x20_bytes32);
-    EXPECT_GAS_USED(QRVMC_SUCCESS, 102409);
+    EXPECT_GAS_USED(QRVMC_SUCCESS, 71700);
 }
 
 TEST_P(qrvm, grow_memory_with_mstore)
@@ -43,13 +43,13 @@ TEST_P(qrvm, grow_memory_with_mstore)
     execute(code, 0x00_bytes32);
     EXPECT_GAS_USED(QRVMC_SUCCESS, 61452);
 
-    // Pokes memory offset increasing by 1, memory grows every 32nd "iteration".
+    // Pokes memory offset increasing by 1, memory grows every 64th "iteration".
     execute(code, 0x01_bytes32);
-    EXPECT_GAS_USED(QRVMC_SUCCESS, 61868);
+    EXPECT_GAS_USED(QRVMC_SUCCESS, 61652);
 
-    // Pokes memory offset increasing by 32, memory grows every "iteration".
+    // Pokes memory offset increasing by 32, memory grows every other iteration.
     execute(code, 0x20_bytes32);
-    EXPECT_GAS_USED(QRVMC_SUCCESS, 106505);
+    EXPECT_GAS_USED(QRVMC_SUCCESS, 75796);
 }
 
 TEST_P(qrvm, jump_around)

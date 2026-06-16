@@ -92,7 +92,7 @@ constexpr inline GasCostTable gas_costs = []() noexcept {
     table[QRVMC_ZOND][OP_MSIZE] = 2;
     table[QRVMC_ZOND][OP_GAS] = 2;
     table[QRVMC_ZOND][OP_JUMPDEST] = 1;
-    for (auto op = size_t{OP_PUSH1}; op <= OP_PUSH32; ++op)
+    for (auto op = size_t{OP_PUSH1}; op <= OP_PUSH64; ++op)
         table[QRVMC_ZOND][op] = 3;
     for (auto op = size_t{OP_DUP1}; op <= OP_DUP16; ++op)
         table[QRVMC_ZOND][op] = 3;
@@ -274,6 +274,38 @@ constexpr inline std::array<Traits, 256> traits = []() noexcept {
     table[OP_PUSH30] = {"PUSH30", 30, false, 0, 1, QRVMC_ZOND};
     table[OP_PUSH31] = {"PUSH31", 31, false, 0, 1, QRVMC_ZOND};
     table[OP_PUSH32] = {"PUSH32", 32, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH33] = {"PUSH33", 33, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH34] = {"PUSH34", 34, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH35] = {"PUSH35", 35, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH36] = {"PUSH36", 36, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH37] = {"PUSH37", 37, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH38] = {"PUSH38", 38, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH39] = {"PUSH39", 39, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH40] = {"PUSH40", 40, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH41] = {"PUSH41", 41, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH42] = {"PUSH42", 42, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH43] = {"PUSH43", 43, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH44] = {"PUSH44", 44, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH45] = {"PUSH45", 45, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH46] = {"PUSH46", 46, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH47] = {"PUSH47", 47, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH48] = {"PUSH48", 48, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH49] = {"PUSH49", 49, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH50] = {"PUSH50", 50, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH51] = {"PUSH51", 51, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH52] = {"PUSH52", 52, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH53] = {"PUSH53", 53, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH54] = {"PUSH54", 54, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH55] = {"PUSH55", 55, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH56] = {"PUSH56", 56, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH57] = {"PUSH57", 57, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH58] = {"PUSH58", 58, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH59] = {"PUSH59", 59, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH60] = {"PUSH60", 60, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH61] = {"PUSH61", 61, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH62] = {"PUSH62", 62, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH63] = {"PUSH63", 63, false, 0, 1, QRVMC_ZOND};
+    table[OP_PUSH64] = {"PUSH64", 64, false, 0, 1, QRVMC_ZOND};
 
     table[OP_DUP1] = {"DUP1", 0, false, 1, 1, QRVMC_ZOND};
     table[OP_DUP2] = {"DUP2", 0, false, 2, 1, QRVMC_ZOND};

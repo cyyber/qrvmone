@@ -11,7 +11,7 @@ TEST(bytecode, push)
     EXPECT_EQ(hex(code), "610102506801020304050607080950");
 
     EXPECT_THROW(push(""), std::invalid_argument);
-    auto data = bytes(33, '\x00');
+    auto data = bytes(65, '\x00');
     EXPECT_THROW(push(data), std::invalid_argument);
 }
 
@@ -28,10 +28,15 @@ TEST(bytecode, push_int)
 
 TEST(bytecode, push_bytes32)
 {
+    // qrvmc::bytes32 is 64 bytes after the 64-byte VM-word migration. The
+    // helper trims leading zeros and then emits the smallest PUSHn that fits.
+    // PUSH64 = 0x9f (encoded as OP_PUSH1 + 63), PUSH63 = 0x9e, etc.
+    // PUSH64 (0x9f) + 64 bytes: 0xee at byte 0, rest zero. 130 hex chars.
     EXPECT_EQ(push(qrvmc::bytes32{{0xee, 0x00}}),
-        "7fee00000000000000000000000000000000000000000000000000000000000000");
+        "9fee000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+    // PUSH63 (0x9e) + 63 bytes: 0xee at byte 0, rest zero. 128 hex chars.
     EXPECT_EQ(push(qrvmc::bytes32{{0x00, 0xee}}),
-        "7eee000000000000000000000000000000000000000000000000000000000000");
+        "9eee0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
     EXPECT_EQ(push(qrvmc::bytes32{}), "6000");
     EXPECT_EQ(push(qrvmc::bytes32{0xee}), "60ee");
     EXPECT_EQ(push(qrvmc::bytes32{0xd0d1}), "61d0d1");
@@ -59,12 +64,15 @@ TEST(bytecode, push_explicit_opcode)
 
 TEST(bytecode, add)
 {
-    auto e = "6007600d0160005260206000f3";
-    auto code = bytecode{} + 7 + 0xd + OP_ADD + 0 + "52" + 0x20 + 0x00 + "f3";
+    // After the 64-byte VM-word migration ret_top() returns memory[0x20:0x40]
+    // (the low 32 bytes of the 64-byte word at offset 0), so the encoded
+    // RETURN takes offset=0x20 instead of the pre-migration offset=0x00.
+    auto e = "6007600d0160005260206020f3";
+    auto code = bytecode{} + 7 + 0xd + OP_ADD + 0 + "52" + 0x20 + 0x20 + "f3";
     EXPECT_EQ(code, e);
-    code = add(13, 7) + 0 + OP_MSTORE + 0x20 + 0 + OP_RETURN;
+    code = add(13, 7) + 0 + OP_MSTORE + 0x20 + 0x20 + OP_RETURN;
     EXPECT_EQ(code, e);
-    code = add(13, 7) + mstore(0) + ret(0, 0x20);
+    code = add(13, 7) + mstore(0) + ret(0x20, 0x20);
     EXPECT_EQ(code, e);
     code = add(13, 7) + ret_top();
     EXPECT_EQ(code, e);
@@ -74,8 +82,10 @@ TEST(bytecode, add)
 
 TEST(bytecode, repeat)
 {
+    // OP_DUP1 = 0xa0 after the opcode-table shift (PUSH33..PUSH64 occupy
+    // 0x80..0x9f); pre-migration encoding "80" no longer represents DUP1.
     auto code = 0 + 2 * OP_DUP1 + "3c";
-    EXPECT_EQ(code, "600080803c");
+    EXPECT_EQ(code, "6000a0a03c");
 
     EXPECT_EQ(0 * OP_STOP, "");
 }

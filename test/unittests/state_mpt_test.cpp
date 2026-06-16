@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <gtest/gtest.h>
+#include <test/state/hash_utils.hpp>
 #include <test/state/mpt.hpp>
 #include <test/state/rlp.hpp>
 #include <test/utils/utils.hpp>
@@ -12,6 +13,19 @@ using namespace qrvmone;
 using namespace qrvmone::state;
 using namespace intx;
 
+namespace
+{
+/// After the 64-byte VM-word migration hash256 (= bytes32) is 64 bytes wide
+/// with the 32-byte keccak hash sitting in the low half (bytes[32..63]).
+/// hex(hash) therefore prints 128 chars; the historical fixtures encode the
+/// 32-byte hash directly, so slice to the meaningful low half before
+/// comparing.
+std::string hex_hash(const hash256& h)
+{
+    return hex(qrvmc::bytes_view{h.bytes + 32, 32});
+}
+}  // namespace
+
 TEST(state_mpt, empty_trie)
 {
     EXPECT_EQ(MPT{}.hash(), emptyMPTHash);
@@ -19,11 +33,14 @@ TEST(state_mpt, empty_trie)
 
 TEST(state_mpt, single_account_v1)
 {
-    // Expected value computed in go-zond.
+    // Expected value regenerated post-migration (64-byte address +
+    // 64-byte VM word). MPT keys derived from keccak256() are now wrapped
+    // in 64-byte qrvmc::bytes32 containers (32-byte hash in low half),
+    // so the trie root differs from the pre-migration go-zond reference.
     constexpr auto expected =
-        0x084f337237951e425716a04fb0aaa74111eda9d9c61767f2497697d0a201c92e_bytes32;
+        0x2623bd1ee75a8f027d8623dabcc8ed8901934e780e45ee3ac42a6e6a5fb31ee5_bytes32;
 
-    constexpr auto addr = "Q0000000000000000000000000000000000000002"_address;
+    constexpr auto addr = "Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002"_address;
     constexpr uint64_t nonce = 0;
     constexpr auto balance = 1_u256;
     constexpr auto storage_hash = emptyMPTHash;
@@ -40,7 +57,7 @@ TEST(state_mpt, single_account_v1)
 TEST(state_mpt, storage_trie_v1)
 {
     constexpr auto expected =
-        0xd9aa83255221f68fdd4931f73f8fe6ea30c191a9619b5fc60ce2914eee1e7e54_bytes32;
+        0x67a12576a3714b8a5e559e204431d85cb221321c80a3439b58bd50fe9c214ef7_bytes32;
 
     const auto key = 0x00_bytes32;
     const auto value = 0x01ff_bytes32;
@@ -56,7 +73,7 @@ TEST(state_mpt, leaf_node_example1)
 {
     MPT trie;
     trie.insert("010203"_hex, "hello"_b);
-    EXPECT_EQ(hex(trie.hash()), "82c8fd36022fbc91bd6b51580cfd941d3d9994017d59ab2e8293ae9c94c3ab6e");
+    EXPECT_EQ(hex_hash(trie.hash()), "82c8fd36022fbc91bd6b51580cfd941d3d9994017d59ab2e8293ae9c94c3ab6e");
 }
 
 TEST(state_mpt, branch_node_example1)
@@ -82,7 +99,7 @@ TEST(state_mpt, branch_node_example1)
     MPT trie;
     trie.insert(key1, std::move(value1));
     trie.insert(key2, std::move(value2));
-    EXPECT_EQ(hex(trie.hash()), "1aaa6f712413b9a115730852323deb5f5d796c29151a60a1f55f41a25354cd26");
+    EXPECT_EQ(hex_hash(trie.hash()), "1aaa6f712413b9a115730852323deb5f5d796c29151a60a1f55f41a25354cd26");
 }
 
 TEST(state_mpt, extension_node_example1)
@@ -105,14 +122,19 @@ TEST(state_mpt, extension_node_example1)
     constexpr auto branch_node_hash =
         0x1aaa6f712413b9a115730852323deb5f5d796c29151a60a1f55f41a25354cd26_bytes32;
 
-    const auto extension_node = rlp::encode_tuple(encoded_common_path, branch_node_hash);
-    EXPECT_EQ(hex(keccak256(extension_node)),
+    // Use the meaningful low 32 bytes of the 64-byte hash container so the
+    // RLP-encoded extension matches the Ethereum-spec layout (the branch
+    // child hash is 32 bytes, not the full 64-byte qrvmc::bytes32 wrapper).
+    const auto branch_node_hash_view =
+        qrvmc::bytes_view{branch_node_hash.bytes + 32, 32};
+    const auto extension_node = rlp::encode_tuple(encoded_common_path, branch_node_hash_view);
+    EXPECT_EQ(hex_hash(keccak256(extension_node)),
         "3eefc183db443d44810b7d925684eb07256e691d5c9cb13215660107121454f9");
 
     MPT trie;
     trie.insert(key1, std::move(value1));
     trie.insert(key2, std::move(value2));
-    EXPECT_EQ(hex(trie.hash()), "3eefc183db443d44810b7d925684eb07256e691d5c9cb13215660107121454f9");
+    EXPECT_EQ(hex_hash(trie.hash()), "3eefc183db443d44810b7d925684eb07256e691d5c9cb13215660107121454f9");
 }
 
 TEST(state_mpt, extension_node_example2)
@@ -145,14 +167,18 @@ TEST(state_mpt, extension_node_example2)
 
     const bytes encoded_common_path{static_cast<uint8_t>(0x10 | common_path[0]),
         static_cast<uint8_t>((common_path[1] << 4) | common_path[2])};
-    const auto extension_node = rlp::encode_tuple(encoded_common_path, branch_node_hash);
-    EXPECT_EQ(hex(keccak256(extension_node)),
+    // Slice to the low 32 bytes so the RLP-encoded extension matches the
+    // Ethereum-spec child-hash width (see extension_node_example1).
+    const auto branch_node_hash_view =
+        qrvmc::bytes_view{branch_node_hash.bytes + 32, 32};
+    const auto extension_node = rlp::encode_tuple(encoded_common_path, branch_node_hash_view);
+    EXPECT_EQ(hex_hash(keccak256(extension_node)),
         "ac28c08fa3ff1d0d2cc9a6423abb7af3f4dcc37aa2210727e7d3009a9b4a34e8");
 
     MPT trie;
     trie.insert(key1, std::move(value1));
     trie.insert(key2, std::move(value2));
-    EXPECT_EQ(hex(trie.hash()), "ac28c08fa3ff1d0d2cc9a6423abb7af3f4dcc37aa2210727e7d3009a9b4a34e8");
+    EXPECT_EQ(hex_hash(trie.hash()), "ac28c08fa3ff1d0d2cc9a6423abb7af3f4dcc37aa2210727e7d3009a9b4a34e8");
 }
 
 TEST(state_mpt, trie_topologies)
@@ -314,7 +340,7 @@ TEST(state_mpt, trie_topologies)
             for (const auto& kv : test)
             {
                 trie.insert(from_hex(kv.key_hex).value(), to_bytes(kv.value));
-                EXPECT_EQ(hex(trie.hash()), kv.hash_hex);
+                EXPECT_EQ(hex_hash(trie.hash()), kv.hash_hex);
             }
         }
 
@@ -327,7 +353,7 @@ TEST(state_mpt, trie_topologies)
             for (size_t i = 0; i < test.size(); ++i)
                 trie.insert(
                     from_hex(test[order[i]].key_hex).value(), to_bytes(test[order[i]].value));
-            EXPECT_EQ(hex(trie.hash()), test.back().hash_hex);
+            EXPECT_EQ(hex_hash(trie.hash()), test.back().hash_hex);
         }
     }
 }

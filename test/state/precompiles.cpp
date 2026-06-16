@@ -165,7 +165,10 @@ std::optional<qrvmc::Result> call_precompile(qrvmc_revision rev, const qrvmc_mes
     if (qrvmc::is_zero(msg.code_address) || msg.code_address >= address_boundary)
         return {};
 
-    const auto id = msg.code_address.bytes[19];
+    // 64-byte-address layout: precompile id is the last byte (bytes[63]),
+    // mirroring the address(uint64_t) constructor that right-aligns the
+    // integer at bytes[56..63].
+    const auto id = msg.code_address.bytes[63];
 
     assert(id > 0);
     assert(msg.gas >= 0);

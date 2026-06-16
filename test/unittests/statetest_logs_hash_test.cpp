@@ -23,6 +23,9 @@ TEST(statetest_logs_hash, example1)
         state::Log{"Qaa"_address, {}, {0x01_bytes32, 0x02_bytes32}},
     };
 
+    // Expected hash regenerated post-migration: log addresses are now 64
+    // bytes wide so the RLP-encoded log entry differs from the
+    // pre-migration 20-byte form.
     EXPECT_EQ(test::logs_hash(logs),
-        0xb27f856c430c0266d2925d442632401e63685677a4ea009f855dee23e74488aa_bytes32);
+        0x61d4dbce1ba1692c72708ec935cd7069aea1453a5548a2c2b9900b39d0678682_bytes32);
 }

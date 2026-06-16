@@ -56,7 +56,7 @@ protected:
 
         void on_execution_end(const qrvmc_result& /*result*/) noexcept override { m_code = {}; }
 
-        void on_instruction_start(uint32_t pc, const intx::uint256* /*stack_top*/,
+        void on_instruction_start(uint32_t pc, const intx::uint512* /*stack_top*/,
             int /*stack_height*/, int64_t /*gas*/,
             const qrvmone::ExecutionState& /*state*/) noexcept override
         {
@@ -82,7 +82,7 @@ protected:
 
         void on_execution_end(const qrvmc_result& /*result*/) noexcept override {}
 
-        void on_instruction_start(uint32_t /*pc*/, const intx::uint256* /*stack_top*/,
+        void on_instruction_start(uint32_t /*pc*/, const intx::uint512* /*stack_top*/,
             int /*stack_height*/, int64_t /*gas*/,
             const qrvmone::ExecutionState& /*state*/) noexcept override
         {}
@@ -215,14 +215,17 @@ TEST_F(tracing, trace_output)
 
     const auto code = push(0xabcdef) + ret_top();
     trace_stream << '\n';
+    // After the 64-byte VM-word migration MSTORE writes 64 bytes (memorySize
+    // jumps to 64) and ret_top() emits RETURN with offset=0x20, size=0x20 so
+    // the output is the low 32 bytes of the 64-byte word at offset 0.
     EXPECT_EQ(trace(code), R"(
 {"depth":0,"rev":"Zond","static":false}
 {"pc":0,"op":98,"opName":"PUSH3","gas":0xf4240,"stack":[],"memorySize":0}
 {"pc":4,"op":96,"opName":"PUSH1","gas":0xf423d,"stack":["0xabcdef"],"memorySize":0}
 {"pc":6,"op":82,"opName":"MSTORE","gas":0xf423a,"stack":["0xabcdef","0x0"],"memorySize":0}
-{"pc":7,"op":96,"opName":"PUSH1","gas":0xf4234,"stack":[],"memorySize":32}
-{"pc":9,"op":96,"opName":"PUSH1","gas":0xf4231,"stack":["0x20"],"memorySize":32}
-{"pc":11,"op":243,"opName":"RETURN","gas":0xf422e,"stack":["0x20","0x0"],"memorySize":32}
+{"pc":7,"op":96,"opName":"PUSH1","gas":0xf4234,"stack":[],"memorySize":64}
+{"pc":9,"op":96,"opName":"PUSH1","gas":0xf4231,"stack":["0x20"],"memorySize":64}
+{"pc":11,"op":243,"opName":"RETURN","gas":0xf422e,"stack":["0x20","0x20"],"memorySize":64}
 {"error":null,"gas":0xf422e,"gasUsed":0x12,"output":"0000000000000000000000000000000000000000000000000000000000abcdef"}
 )");
 }
@@ -233,15 +236,20 @@ TEST_F(tracing, trace_revert)
 
     const auto code = mstore(0, 0x0e4404) + push(3) + push(29) + OP_REVERT;
     trace_stream << '\n';
+    // 64-byte VM-word: MSTORE writes 64 bytes at offset 0 (memorySize=64),
+    // with the 256-bit value 0x0e4404 right-aligned in the low half
+    // (bytes[61..63] = 0x0e,0x44,0x04). REVERT pops [size=3, offset=0x1d]
+    // so output = memory[29..32] which sits in the upper-half zero region
+    // and is therefore three zero bytes.
     EXPECT_EQ(trace(code), R"(
 {"depth":0,"rev":"Zond","static":false}
 {"pc":0,"op":98,"opName":"PUSH3","gas":0xf4240,"stack":[],"memorySize":0}
 {"pc":4,"op":96,"opName":"PUSH1","gas":0xf423d,"stack":["0xe4404"],"memorySize":0}
 {"pc":6,"op":82,"opName":"MSTORE","gas":0xf423a,"stack":["0xe4404","0x0"],"memorySize":0}
-{"pc":7,"op":96,"opName":"PUSH1","gas":0xf4234,"stack":[],"memorySize":32}
-{"pc":9,"op":96,"opName":"PUSH1","gas":0xf4231,"stack":["0x3"],"memorySize":32}
-{"pc":11,"op":253,"opName":"REVERT","gas":0xf422e,"stack":["0x3","0x1d"],"memorySize":32}
-{"error":"revert","gas":0xf422e,"gasUsed":0x12,"output":"0e4404"}
+{"pc":7,"op":96,"opName":"PUSH1","gas":0xf4234,"stack":[],"memorySize":64}
+{"pc":9,"op":96,"opName":"PUSH1","gas":0xf4231,"stack":["0x3"],"memorySize":64}
+{"pc":11,"op":253,"opName":"REVERT","gas":0xf422e,"stack":["0x3","0x1d"],"memorySize":64}
+{"error":"revert","gas":0xf422e,"gasUsed":0x12,"output":"000000"}
 )");
 }
 

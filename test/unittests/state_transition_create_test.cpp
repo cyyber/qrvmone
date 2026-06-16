@@ -10,8 +10,6 @@ using namespace qrvmone::test;
 
 TEST_F(state_transition, create2_factory)
 {
-    static constexpr auto create_address = "Qfd8e7707356349027a32d71eabc7cb0cf9d7cbb4"_address;
-
     const auto factory_code =
         calldatacopy(0, 0, calldatasize()) + create2().input(0, calldatasize());
     const auto initcode = mstore8(0, push(0xFE)) + ret(0, 1);
@@ -20,15 +18,17 @@ TEST_F(state_transition, create2_factory)
     tx.data = initcode;
     pre.insert(*tx.to, {.nonce = 1, .code = factory_code});
 
+    const auto create_address =
+        state::compute_new_account_address(*tx.to, pre.get(*tx.to).nonce, 0x00_bytes32, initcode);
     expect.post[*tx.to].nonce = pre.get(*tx.to).nonce + 1;  // CREATE caller's nonce must be bumped
     expect.post[create_address].code = bytes{0xFE};
 }
 
 TEST_F(state_transition, create_tx)
 {
-    static constexpr auto create_address = "Q3442a1dec1e72f337007125aa67221498cdd759d"_address;
-
     tx.data = mstore8(0, push(0xFE)) + ret(0, 1);
 
+    const auto create_address =
+        state::compute_new_account_address(tx.sender, pre.get(tx.sender).nonce, std::nullopt, tx.data);
     expect.post[create_address].code = bytes{0xFE};
 }

@@ -103,7 +103,7 @@ qrvmc_message build_message(const Transaction& tx, int64_t execution_gas_limit) 
         tx.sender,
         tx.data.data(),
         tx.data.size(),
-        intx::be::store<qrvmc::uint256be>(tx.value),
+        to_be256(tx.value),
         {},
         recipient,
     };
