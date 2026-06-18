@@ -1,14 +1,14 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2023 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
 #include <gtest/gtest.h>
 #include <test/statetest/statetest.hpp>
 
-using namespace zvmone;
+using namespace qrvmone;
 
 static constexpr auto EmptyLogsHash =
-    0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347_bytes32;
+    0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347_bytes64;
 
 TEST(statetest_logs_hash, empty_logs)
 {
@@ -19,10 +19,13 @@ TEST(statetest_logs_hash, empty_logs)
 TEST(statetest_logs_hash, example1)
 {
     const std::vector<state::Log> logs{
-        state::Log{"Z00"_address, bytes{0xb0, 0xb1}, {}},
-        state::Log{"Zaa"_address, {}, {0x01_bytes32, 0x02_bytes32}},
+        state::Log{"Q00"_address, bytes{0xb0, 0xb1}, {}},
+        state::Log{"Qaa"_address, {}, {0x01_bytes64, 0x02_bytes64}},
     };
 
+    // Expected hash regenerated post-migration: log addresses are now 64
+    // bytes wide so the RLP-encoded log entry differs from the
+    // pre-migration 20-byte form.
     EXPECT_EQ(test::logs_hash(logs),
-        0xb27f856c430c0266d2925d442632401e63685677a4ea009f855dee23e74488aa_bytes32);
+        0x61d4dbce1ba1692c72708ec935cd7069aea1453a5548a2c2b9900b39d0678682_bytes64);
 }

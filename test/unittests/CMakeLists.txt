@@ -1,28 +1,28 @@
-# zvmone: Fast Zond Virtual Machine implementation
+# qrvmone: Fast Quantum Resistant Virtual Machine implementation
 # Copyright 2018-2020 The evmone Authors.
 # SPDX-License-Identifier: Apache-2.0
 
-# The internal zvmone unit tests. The generic ZVM ones are also built in.
-add_executable(zvmone-unittests)
+# The internal qrvmone unit tests. The generic QRVM ones are also built in.
+add_executable(qrvmone-unittests)
 target_sources(
-    zvmone-unittests PRIVATE
+    qrvmone-unittests PRIVATE
     analysis_test.cpp
     bytecode_test.cpp
-    zvm_fixture.cpp
-    zvm_fixture.hpp
-    zvm_test.cpp
-    zvm_calls_test.cpp
-    zvm_control_flow_test.cpp
-    zvm_eip2929_test.cpp
-    zvm_eip3198_basefee_test.cpp
-    zvm_eip3855_push0_test.cpp
-    zvm_eip3860_initcode_test.cpp
-    zvm_memory_test.cpp
-    zvm_state_test.cpp
-    zvm_storage_test.cpp
-    zvm_other_test.cpp
-    zvm_benchmark_test.cpp
-    zvmone_test.cpp
+    qrvm_fixture.cpp
+    qrvm_fixture.hpp
+    qrvm_test.cpp
+    qrvm_calls_test.cpp
+    qrvm_control_flow_test.cpp
+    qrvm_eip2929_test.cpp
+    qrvm_eip3198_basefee_test.cpp
+    qrvm_eip3855_push0_test.cpp
+    qrvm_eip3860_initcode_test.cpp
+    qrvm_memory_test.cpp
+    qrvm_state_test.cpp
+    qrvm_storage_test.cpp
+    qrvm_other_test.cpp
+    qrvm_benchmark_test.cpp
+    qrvmone_test.cpp
     execution_state_test.cpp
     instructions_test.cpp
     state_bloom_filter_test.cpp
@@ -40,21 +40,21 @@ target_sources(
     statetest_logs_hash_test.cpp
     tracing_test.cpp
 )
-target_link_libraries(zvmone-unittests PRIVATE zvmone zvmone::state zvmone::statetestutils testutils zvmc::instructions GTest::gtest GTest::gtest_main)
-target_include_directories(zvmone-unittests PRIVATE ${zvmone_private_include_dir})
+target_link_libraries(qrvmone-unittests PRIVATE qrvmone qrvmone::state qrvmone::statetestutils testutils qrvmc::instructions GTest::gtest GTest::gtest_main)
+target_include_directories(qrvmone-unittests PRIVATE ${qrvmone_private_include_dir})
 
-gtest_discover_tests(zvmone-unittests TEST_PREFIX ${PROJECT_NAME}/unittests/)
+gtest_discover_tests(qrvmone-unittests TEST_PREFIX ${PROJECT_NAME}/unittests/)
 
-option(ZVMONE_ZVM_TEST_TOOL "Enable ZVM unit testing tool for ZVMC implementations (not maintained)" OFF)
-if(ZVMONE_ZVM_TEST_TOOL)
-    # The zvm-test tool that contains the all zvm-unittests and loads VMs as ZVMC modules.
-    add_executable(zvm-test main.cpp)
-    target_link_libraries(zvm-test PRIVATE zvm-unittests testutils zvmc::zvmc zvmc::loader GTest::gtest)
+option(QRVMONE_QRVM_TEST_TOOL "Enable QRVM unit testing tool for QRVMC implementations (not maintained)" OFF)
+if(QRVMONE_QRVM_TEST_TOOL)
+    # The qrvm-test tool that contains the all qrvm-unittests and loads VMs as QRVMC modules.
+    add_executable(qrvm-test main.cpp)
+    target_link_libraries(qrvm-test PRIVATE qrvm-unittests testutils qrvmc::qrvmc qrvmc::loader GTest::gtest)
 endif()
 
 # Provide the project version to selected source files.
 set_source_files_properties(
-    zvmone_test.cpp
+    qrvmone_test.cpp
     main.cpp
     PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="${PROJECT_VERSION}"
 )

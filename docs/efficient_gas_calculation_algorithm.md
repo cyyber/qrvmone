@@ -1,7 +1,7 @@
-# Efficient gas calculation algorithm for ZVM
+# Efficient gas calculation algorithm for QRVM
 
 This article describes how to efficiently calculate gas and check stack requirements
-for Zond Virtual Machine (ZVM) instructions.
+for Quantum Resistant Virtual Machine (QRVM) instructions.
 
 
 ## Instructions metadata
@@ -45,7 +45,7 @@ Jumpdests are only allowed at the entry, jumps at the exit.
 Basic blocks are nodes in the _control flow graph_.
 See [Basic Block] in Wikipedia.
 
-In ZVM there are simple rules to identify basic instruction block boundaries:
+In QRVM there are simple rules to identify basic instruction block boundaries:
 
 1. A basic instruction block _starts_ right before:
    - the first instruction in the code,
@@ -133,7 +133,7 @@ def check_basic_block_requirements(state, basic_block):
 
 ## Misc
 
-### ZVM may terminate earlier
+### QRVM may terminate earlier
 
 Because requirements for a whole basic block are checked up front, the instructions
 that have observable external effects might not be executed although they would be
@@ -144,9 +144,9 @@ or terminate with a different exception type.
 
 ### Current "gas left" value
 
-In ZVMJIT additional instructions that begin a basic block are `GAS` and any of the _call_ instructions. This is because
+In QRVMJIT additional instructions that begin a basic block are `GAS` and any of the _call_ instructions. This is because
 these instructions need to know the precise _gas left_ counter value. 
-However, in zvmone this problem has been solved without additional blocks splitting 
+However, in qrvmone this problem has been solved without additional blocks splitting 
 by attaching the correction value to the mentioned instructions.
 
 ### Undefined instructions

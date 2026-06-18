@@ -1,4 +1,4 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2022 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -12,24 +12,27 @@
 #include <test/state/state.hpp>
 #include <array>
 
-using namespace zvmone;
-using namespace zvmone::state;
+using namespace qrvmone;
+using namespace qrvmone::state;
 using namespace intx;
 
 TEST(state_mpt_hash, empty)
 {
-    EXPECT_EQ(mpt_hash(std::unordered_map<zvmone::address, Account>()), emptyMPTHash);
+    EXPECT_EQ(mpt_hash(std::unordered_map<qrvmone::address, Account>()), emptyMPTHash);
 }
 
 TEST(state_mpt_hash, single_account_v1)
 {
-    // Expected value computed in go-zond.
+    // Expected value regenerated post-migration (64-byte address +
+    // 64-byte VM word). The MPT keys are 64-byte qrvmc::bytes64 wrappers
+    // with a 32-byte keccak-256 hash in the low half, so MPT hashes
+    // diverge from the pre-migration go-zond reference.
     constexpr auto expected =
-        0x084f337237951e425716a04fb0aaa74111eda9d9c61767f2497697d0a201c92e_bytes32;
+        0x24cc200965e3532533e1e9a756bd278ddce98809e719b4c3a7cff21ef9784bab_bytes64;
 
     Account acc;
     acc.balance = 1_u256;
-    const std::unordered_map<address, Account> accounts{{"Z02"_address, acc}};
+    const std::unordered_map<address, Account> accounts{{"Q02"_address, acc}};
     EXPECT_EQ(mpt_hash(accounts), expected);
 }
 
@@ -38,30 +41,30 @@ TEST(state_mpt_hash, two_accounts)
     std::unordered_map<address, Account> accounts;
     EXPECT_EQ(mpt_hash(accounts), emptyMPTHash);
 
-    accounts["Z00"_address] = Account{};
+    accounts["Q00"_address] = Account{};
     EXPECT_EQ(mpt_hash(accounts),
-        0x0ce23f3c809de377b008a4a3ee94a0834aac8bec1f86e28ffe4fdb5a15b0c785_bytes32);
+        0x6de0e370fffa90193b7ab5e21079605588d9a880da4730b372838c73503dc34b_bytes64);
 
     Account acc2;
     acc2.nonce = 1;
     acc2.balance = -2_u256;
     acc2.code = {0x00};
-    acc2.storage[0x01_bytes32] = {0xfe_bytes32};
-    acc2.storage[0x02_bytes32] = {0xfd_bytes32};
-    accounts["Z01"_address] = acc2;
+    acc2.storage[0x01_bytes64] = {0xfe_bytes64};
+    acc2.storage[0x02_bytes64] = {0xfd_bytes64};
+    accounts["Q01"_address] = acc2;
     EXPECT_EQ(mpt_hash(accounts),
-        0xd3e845156fca75de99712281581304fbde104c0fc5a102b09288c07cdde0b666_bytes32);
+        0x445a6104155b8e65709177f0a94d12013c00a95f1e88fc39efa26a24581517c9_bytes64);
 }
 
 TEST(state_mpt_hash, deleted_storage)
 {
     Account acc;
-    acc.storage[0x01_bytes32] = {};
-    acc.storage[0x02_bytes32] = {0xfd_bytes32};
-    acc.storage[0x03_bytes32] = {};
-    const std::unordered_map<address, Account> accounts{{"Z07"_address, acc}};
+    acc.storage[0x01_bytes64] = {};
+    acc.storage[0x02_bytes64] = {0xfd_bytes64};
+    acc.storage[0x03_bytes64] = {};
+    const std::unordered_map<address, Account> accounts{{"Q07"_address, acc}};
     EXPECT_EQ(mpt_hash(accounts),
-        0x4e7338c16731491e0fb5d1623f5265c17699c970c816bab71d4d717f6071414d_bytes32);
+        0x69caae93c0a679336acf14ac8be9ed281d5e0b1ea3d85fb544b1ac20037d83bd_bytes64);
 }
 
 TEST(state_mpt_hash, one_transactions)
@@ -95,8 +98,8 @@ TEST(state_mpt_hash, one_transactions)
     tx.gas_limit = 387780;
     tx.max_gas_price = 1500000014;
     tx.max_priority_gas_price = 1500000000;
-    tx.sender = "Z204cc644e26bdf879db422658edee62e302c3da8"_address;
-    tx.to = "Zacd9a09eb3123602937cb30ff717e746c57a5132"_address;
+    tx.sender = "Q00000000000000000000000000000000000000000000000000000000204cc644e26bdf879db422658edee62e302c3da8"_address;
+    tx.to = "Q00000000000000000000000000000000000000000000000000000000acd9a09eb3123602937cb30ff717e746c57a5132"_address;
     tx.value = 0;
     tx.nonce = 10246;
     tx.public_key =
@@ -106,48 +109,52 @@ TEST(state_mpt_hash, one_transactions)
     tx.chain_id = 11155111;
 
     const auto tx_root = mpt_hash(std::array{tx});
-    EXPECT_EQ(tx_root, 0x9eae8bcf25335b22d7ebff8c179efc8e8dbcaa55aadf331d2efba1cf7cb3112f_bytes32);
+    EXPECT_EQ(tx_root, 0xac99ed689f40aaa4b8e263cd8e572c3647e91f37c9ae6f9a670becf4a0d37523_bytes64);
 }
 
 TEST(state_mpt_hash, eip1559_receipt_three_logs_no_logs)
 {
     TransactionReceipt receipt0{};
-    receipt0.kind = zvmone::state::Transaction::Kind::eip1559;
-    receipt0.status = ZVMC_SUCCESS;
+    receipt0.kind = qrvmone::state::Transaction::Kind::eip1559;
+    receipt0.status = QRVMC_SUCCESS;
     receipt0.gas_used = 0x24522;
 
     Log l0;
-    l0.addr = "Z84bf5c35c54a994c72ff9d8b4cca8f5034153a2c"_address;
+    l0.addr = "Q0000000000000000000000000000000000000000000000000000000084bf5c35c54a994c72ff9d8b4cca8f5034153a2c"_address;
     l0.data = "0x0000000000000000000000000000000000000000000000000000000063ee2f6c"_hex;
-    l0.topics = {0x0109fc6f55cf40689f02fbaad7af7fe7bbac8a3d2186600afc7d3e10cac60271_bytes32,
-        0x00000000000000000000000000000000000000000000000000000000000027b6_bytes32,
-        0x00000000000000000000000038dc84830b92d171d7b4c129c813360d6ab8b54e_bytes32};
+    l0.topics = {0x0109fc6f55cf40689f02fbaad7af7fe7bbac8a3d2186600afc7d3e10cac60271_bytes64,
+        0x00000000000000000000000000000000000000000000000000000000000027b6_bytes64,
+        0x00000000000000000000000038dc84830b92d171d7b4c129c813360d6ab8b54e_bytes64};
 
     Log l1;
-    l1.addr = "Z84bf5c35c54a994c72ff9d8b4cca8f5034153a2c"_address;
+    l1.addr = "Q0000000000000000000000000000000000000000000000000000000084bf5c35c54a994c72ff9d8b4cca8f5034153a2c"_address;
     l1.data = ""_b;
     l1.topics = {
-        0x92e98423f8adac6e64d0608e519fd1cefb861498385c6dee70d58fc926ddc68c_bytes32,
-        0x00000000000000000000000000000000000000000000000000000000481f2280_bytes32,
-        0x00000000000000000000000000000000000000000000000000000000000027b6_bytes32,
-        0x00000000000000000000000038dc84830b92d171d7b4c129c813360d6ab8b54e_bytes32,
+        0x92e98423f8adac6e64d0608e519fd1cefb861498385c6dee70d58fc926ddc68c_bytes64,
+        0x00000000000000000000000000000000000000000000000000000000481f2280_bytes64,
+        0x00000000000000000000000000000000000000000000000000000000000027b6_bytes64,
+        0x00000000000000000000000038dc84830b92d171d7b4c129c813360d6ab8b54e_bytes64,
     };
 
     Log l2;
-    l2.addr = "Z84bf5c35c54a994c72ff9d8b4cca8f5034153a2c"_address;
+    l2.addr = "Q0000000000000000000000000000000000000000000000000000000084bf5c35c54a994c72ff9d8b4cca8f5034153a2c"_address;
     l2.data = ""_b;
-    l2.topics = {0xfe25c73e3b9089fac37d55c4c7efcba6f04af04cebd2fc4d6d7dbb07e1e5234f_bytes32,
-        0x000000000000000000000000000000000000000000000c958b4bca4282ac0000_bytes32};
+    l2.topics = {0xfe25c73e3b9089fac37d55c4c7efcba6f04af04cebd2fc4d6d7dbb07e1e5234f_bytes64,
+        0x000000000000000000000000000000000000000000000c958b4bca4282ac0000_bytes64};
 
     receipt0.logs = {l0, l1, l2};
     receipt0.logs_bloom_filter = compute_bloom_filter(receipt0.logs);
 
     TransactionReceipt receipt1{};
-    receipt1.kind = zvmone::state::Transaction::Kind::eip1559;
-    receipt1.status = ZVMC_SUCCESS;
+    receipt1.kind = qrvmone::state::Transaction::Kind::eip1559;
+    receipt1.status = QRVMC_SUCCESS;
     receipt1.gas_used = 0x2cd9b;
     receipt1.logs_bloom_filter = compute_bloom_filter(receipt1.logs);
 
+    // TODO(go-qrl): regression baseline regenerated after the bloom-filter
+    // digest-offset fix (bloom now reads the keccak digest from the low 32
+    // bytes of the 64-byte hash256). This value is self-derived from qrvmone
+    // and must be cross-checked against the go-qrl reference receipts root.
     EXPECT_EQ(mpt_hash(std::array{receipt0, receipt1}),
-        0xb2863204ad0580dbec14fd35f8a0ec71fb179765bff7fc279f05349733eb627b_bytes32);
+        0x514ec429aa30f695d7291dda0ad02015385e04f0647ab0eec46d86609ab897f6_bytes64);
 }

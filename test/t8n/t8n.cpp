@@ -1,4 +1,4 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2023 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -6,8 +6,8 @@
 #include "../state/rlp.hpp"
 #include "../statetest/statetest.hpp"
 #include <nlohmann/json.hpp>
-#include <zvmone/version.h>
-#include <zvmone/zvmone.h>
+#include <qrvmone/version.h>
+#include <qrvmone/qrvmone.h>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -15,13 +15,13 @@
 
 namespace fs = std::filesystem;
 namespace json = nlohmann;
-using namespace zvmone;
-using namespace zvmone::test;
+using namespace qrvmone;
+using namespace qrvmone::test;
 using namespace std::literals;
 
 int main(int argc, const char* argv[])
 {
-    zvmc_revision rev = {};
+    qrvmc_revision rev = {};
     fs::path alloc_file;
     fs::path env_file;
     fs::path txs_file;
@@ -39,11 +39,11 @@ int main(int argc, const char* argv[])
 
             if (arg == "-v")
             {
-                std::cout << "zvmone-t8n " ZVMONE_VERSION "\n";
+                std::cout << "qrvmone-t8n " QRVMONE_VERSION "\n";
                 return 0;
             }
             if (arg == "--state.fork" && ++i < argc)
-                rev = zvmone::test::to_rev(argv[i]);
+                rev = qrvmone::test::to_rev(argv[i]);
             else if (arg == "--input.alloc" && ++i < argc)
                 alloc_file = argv[i];
             else if (arg == "--input.env" && ++i < argc)
@@ -88,7 +88,7 @@ int main(int argc, const char* argv[])
         {
             const auto j_txs = json::json::parse(std::ifstream{txs_file});
 
-            zvmc::VM vm{zvmc_create_zvmone(), {{"O", "0"}}};
+            qrvmc::VM vm{qrvmc_create_qrvmone(), {{"O", "0"}}};
 
             std::vector<state::Log> txs_logs;
 
@@ -109,7 +109,7 @@ int main(int argc, const char* argv[])
                     if (j_txs[i].contains("hash"))
                     {
                         const auto loaded_tx_hash_opt =
-                            zvmc::from_hex<bytes32>(j_txs[i]["hash"].get<std::string>());
+                            qrvmc::from_hex<bytes64>(j_txs[i]["hash"].get<std::string>());
 
                         if (loaded_tx_hash_opt != computed_tx_hash)
                             throw std::logic_error("transaction hash mismatched: computed " +
@@ -140,7 +140,7 @@ int main(int argc, const char* argv[])
                         cumulative_gas_used += receipt.gas_used;
                         j_receipt["cumulativeGasUsed"] = hex0x(cumulative_gas_used);
 
-                        j_receipt["blockHash"] = hex0x(bytes32{});
+                        j_receipt["blockHash"] = hex0x(bytes64{});
                         j_receipt["contractAddress"] = hex0x(address{});
                         j_receipt["logsBloom"] = hex0x(receipt.logs_bloom_filter);
                         j_receipt["logs"] = json::json::array();  // FIXME: Add to_json<state:Log>

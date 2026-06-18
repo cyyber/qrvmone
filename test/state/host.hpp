@@ -1,4 +1,4 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2022 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -8,9 +8,9 @@
 #include <optional>
 #include <unordered_set>
 
-namespace zvmone::state
+namespace qrvmone::state
 {
-using zvmc::uint256be;
+using qrvmc::uint512be;
 
 inline constexpr size_t max_code_size = 0x6000;
 inline constexpr size_t max_initcode_size = 2 * max_code_size;
@@ -26,68 +26,68 @@ inline constexpr size_t max_initcode_size = 2 * max_code_size;
 /// @param init_code     The contract creation init code. Value only affects CREATE2. YP: 𝐢.
 /// @return              The computed address for CREATE or CREATE2 scheme.
 address compute_new_account_address(const address& sender, uint64_t sender_nonce,
-    const std::optional<bytes32>& salt, bytes_view init_code) noexcept;
+    const std::optional<bytes64>& salt, bytes_view init_code) noexcept;
 
-class Host : public zvmc::Host
+class Host : public qrvmc::Host
 {
-    zvmc_revision m_rev;
-    zvmc::VM& m_vm;
+    qrvmc_revision m_rev;
+    qrvmc::VM& m_vm;
     State& m_state;
     const BlockInfo& m_block;
     const Transaction& m_tx;
     std::vector<Log> m_logs;
 
 public:
-    Host(zvmc_revision rev, zvmc::VM& vm, State& state, const BlockInfo& block,
+    Host(qrvmc_revision rev, qrvmc::VM& vm, State& state, const BlockInfo& block,
         const Transaction& tx) noexcept
       : m_rev{rev}, m_vm{vm}, m_state{state}, m_block{block}, m_tx{tx}
     {}
 
     [[nodiscard]] std::vector<Log>&& take_logs() noexcept { return std::move(m_logs); }
 
-    zvmc::Result call(const zvmc_message& msg) noexcept override;
+    qrvmc::Result call(const qrvmc_message& msg) noexcept override;
 
 private:
     [[nodiscard]] bool account_exists(const address& addr) const noexcept override;
 
-    [[nodiscard]] bytes32 get_storage(
-        const address& addr, const bytes32& key) const noexcept override;
+    [[nodiscard]] bytes64 get_storage(
+        const address& addr, const bytes64& key) const noexcept override;
 
-    zvmc_storage_status set_storage(
-        const address& addr, const bytes32& key, const bytes32& value) noexcept override;
+    qrvmc_storage_status set_storage(
+        const address& addr, const bytes64& key, const bytes64& value) noexcept override;
 
-    [[nodiscard]] uint256be get_balance(const address& addr) const noexcept override;
+    [[nodiscard]] uint512be get_balance(const address& addr) const noexcept override;
 
     [[nodiscard]] size_t get_code_size(const address& addr) const noexcept override;
 
-    [[nodiscard]] bytes32 get_code_hash(const address& addr) const noexcept override;
+    [[nodiscard]] bytes64 get_code_hash(const address& addr) const noexcept override;
 
     size_t copy_code(const address& addr, size_t code_offset, uint8_t* buffer_data,
         size_t buffer_size) const noexcept override;
 
-    zvmc::Result create(const zvmc_message& msg) noexcept;
+    qrvmc::Result create(const qrvmc_message& msg) noexcept;
 
-    [[nodiscard]] zvmc_tx_context get_tx_context() const noexcept override;
+    [[nodiscard]] qrvmc_tx_context get_tx_context() const noexcept override;
 
-    [[nodiscard]] bytes32 get_block_hash(int64_t block_number) const noexcept override;
+    [[nodiscard]] bytes64 get_block_hash(int64_t block_number) const noexcept override;
 
     void emit_log(const address& addr, const uint8_t* data, size_t data_size,
-        const bytes32 topics[], size_t topics_count) noexcept override;
+        const bytes64 topics[], size_t topics_count) noexcept override;
 
 public:
-    zvmc_access_status access_account(const address& addr) noexcept override;
+    qrvmc_access_status access_account(const address& addr) noexcept override;
 
 private:
-    zvmc_access_status access_storage(const address& addr, const bytes32& key) noexcept override;
+    qrvmc_access_status access_storage(const address& addr, const bytes64& key) noexcept override;
 
     /// Prepares message for execution.
     ///
     /// This contains mostly checks and logic related to the sender
-    /// which may finally be moved to ZVM.
+    /// which may finally be moved to QRVM.
     /// Any state modification is not reverted.
-    /// @return Modified message or std::nullopt in case of ZVM exception.
-    std::optional<zvmc_message> prepare_message(zvmc_message msg);
+    /// @return Modified message or std::nullopt in case of QRVM exception.
+    std::optional<qrvmc_message> prepare_message(qrvmc_message msg);
 
-    zvmc::Result execute_message(const zvmc_message& msg) noexcept;
+    qrvmc::Result execute_message(const qrvmc_message& msg) noexcept;
 };
-}  // namespace zvmone::state
+}  // namespace qrvmone::state

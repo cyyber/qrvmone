@@ -4,10 +4,10 @@ comment:
 flags:
   statetests:
     paths:
-      - lib/zvmone
+      - lib/qrvmone
       - test/state
       - test/statetest
   blockchaintests:
     joined: false
     paths:
-      - lib/zvmone
+      - lib/qrvmone

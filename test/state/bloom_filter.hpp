@@ -1,4 +1,4 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2023 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -6,12 +6,12 @@
 #include "hash_utils.hpp"
 #include <span>
 
-namespace zvmone::state
+namespace qrvmone::state
 {
 struct Log;
 struct TransactionReceipt;
 
-/// The 2048-bit hash suitable for keeping an Zond bloom filter of transactions logs.
+/// The 2048-bit hash suitable for keeping a QRL bloom filter of transactions logs.
 struct BloomFilter
 {
     //// The 256 bytes of the bloom filter value.
@@ -30,4 +30,4 @@ struct BloomFilter
 [[nodiscard]] BloomFilter compute_bloom_filter(
     std::span<const TransactionReceipt> receipts) noexcept;
 
-}  // namespace zvmone::state
+}  // namespace qrvmone::state

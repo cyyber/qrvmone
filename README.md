@@ -1,4 +1,4 @@
-# zvmone
+# qrvmone
 
 [![ethereum badge]][ethereum]
 [![readme style standard badge]][standard readme]
@@ -7,18 +7,18 @@
 [![appveyor badge]][appveyor]
 [![license badge]][Apache License, Version 2.0]
 
-> Fast Zond Virtual Machine implementation
+> Fast Quantum Resistant Virtual Machine implementation
 
-_zvmone_ is a C++ implementation of the Zond Virtual Machine (ZVM). 
-Created by members of the [Ipsilon] (ex-[Ewasm]) team, the project aims for clean, standalone ZVM implementation 
-that can be imported as an execution module by Zond Client projects. 
-The codebase of _zvmone_ is optimized to provide fast and efficient execution of ZVM smart contracts.
+_qrvmone_ is a C++ implementation of the Quantum Resistant Virtual Machine (QRVM). 
+Created by members of the [Ipsilon] (ex-[Ewasm]) team, the project aims for clean, standalone QRVM implementation 
+that can be imported as an execution module by QRL Client projects. 
+The codebase of _qrvmone_ is optimized to provide fast and efficient execution of QRVM smart contracts.
 
-### Characteristic of zvmone
+### Characteristic of qrvmone
 
-1. Exposes the [ZVMC] API.
+1. Exposes the [QRVMC] API.
 2. Requires C++20 standard.
-3. The [intx] library is used to provide 256-bit integer precision.
+3. The [intx] library is used to provide multi-precision integer arithmetic (256-bit and 512-bit) used by the QRVM stack.
 4. The [ethash] library is used to provide Keccak hash function implementation
    needed for the special `KECCAK256` instruction.
 5. Contains two interpreters: 
@@ -27,13 +27,13 @@ The codebase of _zvmone_ is optimized to provide fast and efficient execution of
 
 ### Baseline Interpreter
 
-1. Provides relatively straight-forward but efficient ZVM implementation.
+1. Provides relatively straight-forward but efficient QRVM implementation.
 2. Performs only minimalistic `JUMPDEST` analysis.
 
 ### Advanced Interpreter
 
 1. The _indirect call threading_ is the dispatch method used -
-   a loaded ZVM program is a table with pointers to functions implementing virtual instructions.
+   a loaded QRVM program is a table with pointers to functions implementing virtual instructions.
 2. The gas cost and stack requirements of block of instructions is precomputed 
    and applied once per block during execution.
 3. Performs extensive and expensive bytecode analysis before execution.
@@ -43,38 +43,38 @@ The codebase of _zvmone_ is optimized to provide fast and efficient execution of
 
 ### As gzond plugin
 
-zvmone implements the [ZVMC] API for Zond Virtual Machines.
-It can be used as a plugin replacing gzond's internal ZVM. But for that a modified
+qrvmone implements the [QRVMC] API for Quantum Resistant Virtual Machines.
+It can be used as a plugin replacing gzond's internal QRVM. But for that a modified
 version of gzond is needed. The [Ewasm]'s fork
-of go-zond provides [binary releases of gzond with ZVMC support](https://github.com/ewasm/go-ethereum/releases).
+of go-zond provides [binary releases of gzond with QRVMC support](https://github.com/ewasm/go-ethereum/releases).
 
-Next, download zvmone from [Releases].
+Next, download qrvmone from [Releases].
 
-Start the downloaded gzond with `--vm.zvm` option pointing to the zvmone shared library.
+Start the downloaded gzond with `--vm.qrvm` option pointing to the qrvmone shared library.
 
 ```bash
-gzond --vm.zvm=./libzvmone.so
+gzond --vm.qrvm=./libqrvmone.so
 ```
 
 ### Building from source
 
-To build the zvmone ZVMC module (shared library), test, and benchmark:
+To build the qrvmone QRVMC module (shared library), test, and benchmark:
 
 1. Fetch the source code:
    ```
-   git clone --recursive https://github.com/theqrl/zvmone
-   cd zvmone
+   git clone --recursive https://github.com/theqrl/qrvmone
+   cd qrvmone
    ```
 
 2. Configure the project build and dependencies:
    ##### Linux / OSX
    ```
-   cmake -S . -B build -DZVMONE_TESTING=ON
+   cmake -S . -B build -DQRVMONE_TESTING=ON
    ```
 
    ##### Windows
    ```
-   cmake -S . -B build -DZVMONE_TESTING=ON -G "Visual Studio 16 2019" -A x64
+   cmake -S . -B build -DQRVMONE_TESTING=ON -G "Visual Studio 16 2019" -A x64
    ```
    
 3. Build:
@@ -85,38 +85,38 @@ To build the zvmone ZVMC module (shared library), test, and benchmark:
 
 3. Run the unit tests or benchmarking tool:
    ```
-   build/bin/zvmone-unittests
-   build/bin/zvmone-bench test/zvm-benchmarks/benchmarks
+   build/bin/qrvmone-unittests
+   build/bin/qrvmone-bench test/qrvm-benchmarks/benchmarks
    ```
 
 ### Tools
 
-#### zvm-test
+#### qrvm-test
 
-The **zvm-test** executes a collection of unit tests on 
-any ZVMC-compatible Zond Virtual Machine implementation.
-The collection of tests comes from the zvmone project.
+The **qrvm-test** executes a collection of unit tests on 
+any QRVMC-compatible Quantum Resistant Virtual Machine implementation.
+The collection of tests comes from the qrvmone project.
 
 ```bash
-zvm-test ./zvmone.so
+qrvm-test ./qrvmone.so
 ```
 
 ### Docker
 
-Docker images with zvmone are available on Docker Hub:
-https://hub.docker.com/r/ethereum/zvmone.
+Docker images with qrvmone are available on Docker Hub:
+https://hub.docker.com/r/qrledger/qrvmone.
 
-Having the zvmone shared library inside a docker is not very useful on its own,
+Having the qrvmone shared library inside a docker is not very useful on its own,
 but the image can be used as the base of another one or you can run benchmarks 
 with it.
 
 ```bash
-docker run --entrypoint zvmone-bench ethereum/zvmone /src/test/benchmarks
+docker run --entrypoint qrvmone-bench qrledger/qrvmone /src/test/benchmarks
 ```
 
 ## References
 
-1. [Efficient gas calculation algorithm for ZVM](docs/efficient_gas_calculation_algorithm.md)
+1. [Efficient gas calculation algorithm for QRVM](docs/efficient_gas_calculation_algorithm.md)
 
 ## Maintainer
 
@@ -127,25 +127,3 @@ Paweł Bylica [@chfast]
 [![license badge]][Apache License, Version 2.0]
 
 Licensed under the [Apache License, Version 2.0].
-
-
-[@chfast]: https://github.com/chfast
-[appveyor]: https://ci.appveyor.com/project/chfast/evmone/branch/master
-[circleci]: https://circleci.com/gh/ethereum/evmone/tree/master
-[codecov]: https://codecov.io/gh/ethereum/evmone/
-[Apache License, Version 2.0]: LICENSE
-[ethereum]: https://ethereum.org
-[ZVMC]: https://github.com/ethereum/evmc
-[Ipsilon]: https://github.com/ipsilon
-[Ewasm]: https://github.com/ewasm
-[intx]: https://github.com/chfast/intx
-[ethash]: https://github.com/chfast/ethash
-[Releases]: https://github.com/ethereum/evmone/releases
-[standard readme]: https://github.com/RichardLitt/standard-readme
-
-[appveyor badge]: https://img.shields.io/appveyor/ci/chfast/evmone/master.svg?logo=appveyor
-[circleci badge]: https://img.shields.io/circleci/project/github/ethereum/evmone/master.svg?logo=circleci
-[codecov badge]: https://img.shields.io/codecov/c/github/ethereum/evmone.svg?logo=codecov
-[ethereum badge]: https://img.shields.io/badge/ethereum-EVM-informational.svg?logo=ethereum
-[license badge]: https://img.shields.io/github/license/ethereum/evmone.svg?logo=apache
-[readme style standard badge]: https://img.shields.io/badge/readme%20style-standard-brightgreen.svg

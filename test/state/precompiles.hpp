@@ -1,13 +1,13 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2022 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
 #include "../utils/stdx/utility.hpp"
-#include <zvmc/zvmc.hpp>
+#include <qrvmc/qrvmc.hpp>
 #include <optional>
 
-namespace zvmone::state
+namespace qrvmone::state
 {
 /// The total number of known precompiles ids, including 0.
 inline constexpr std::size_t NumPrecompiles = 10;
@@ -25,9 +25,9 @@ enum class PrecompileId : uint8_t
 
 struct ExecutionResult
 {
-    zvmc_status_code status_code;
+    qrvmc_status_code status_code;
     size_t output_size;
 };
 
-std::optional<zvmc::Result> call_precompile(zvmc_revision rev, const zvmc_message& msg) noexcept;
-}  // namespace zvmone::state
+std::optional<qrvmc::Result> call_precompile(qrvmc_revision rev, const qrvmc_message& msg) noexcept;
+}  // namespace qrvmone::state

@@ -1,4 +1,4 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2023 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -6,8 +6,8 @@
 #include <test/statetest/statetest.hpp>
 #include <test/utils/utils.hpp>
 
-using namespace zvmone;
-using namespace zvmone::test;
+using namespace qrvmone;
+using namespace qrvmone::test;
 using namespace testing;
 
 TEST(json_loader, uint64_t)
@@ -102,7 +102,7 @@ TEST(statetest_loader, load_minimal_test)
     EXPECT_EQ(st.block.timestamp, 0);
     EXPECT_EQ(st.block.gas_limit, 0);
     EXPECT_EQ(st.block.coinbase, address{});
-    EXPECT_EQ(st.block.prev_randao, bytes32{});
+    EXPECT_EQ(st.block.prev_randao, bytes64{});
     EXPECT_EQ(st.block.base_fee, 0);
     EXPECT_EQ(st.multi_tx.kind, test::TestMultiTransaction::Kind::eip1559);
     EXPECT_EQ(st.multi_tx.data, bytes{});

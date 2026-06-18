@@ -1,11 +1,11 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2022 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
 #include "statetest.hpp"
 #include <CLI/CLI.hpp>
 #include <gtest/gtest.h>
-#include <zvmone/zvmone.h>
+#include <qrvmone/qrvmone.h>
 #include <iostream>
 
 namespace
@@ -13,28 +13,28 @@ namespace
 class StateTest : public testing::Test
 {
     fs::path m_json_test_file;
-    zvmc::VM& m_vm;
+    qrvmc::VM& m_vm;
 
 public:
-    explicit StateTest(fs::path json_test_file, zvmc::VM& vm) noexcept
+    explicit StateTest(fs::path json_test_file, qrvmc::VM& vm) noexcept
       : m_json_test_file{std::move(json_test_file)}, m_vm{vm}
     {}
 
     void TestBody() final
     {
         std::ifstream f{m_json_test_file};
-        zvmone::test::run_state_test(zvmone::test::load_state_test(f), m_vm);
+        qrvmone::test::run_state_test(qrvmone::test::load_state_test(f), m_vm);
     }
 };
 
-void register_test(const std::string& suite_name, const fs::path& file, zvmc::VM& vm)
+void register_test(const std::string& suite_name, const fs::path& file, qrvmc::VM& vm)
 {
     testing::RegisterTest(suite_name.c_str(), file.stem().string().c_str(), nullptr, nullptr,
         file.string().c_str(), 0,
         [file, &vm]() -> testing::Test* { return new StateTest(file, vm); });
 }
 
-void register_test_files(const fs::path& root, zvmc::VM& vm)
+void register_test_files(const fs::path& root, qrvmc::VM& vm)
 {
     if (is_directory(root))
     {
@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
     {
         testing::InitGoogleTest(&argc, argv);  // Process GoogleTest flags.
 
-        CLI::App app{"zvmone state test runner"};
+        CLI::App app{"qrvmone state test runner"};
 
         std::vector<std::string> paths;
         app.add_option("path", paths, "Path to test file or directory")
@@ -81,11 +81,11 @@ int main(int argc, char* argv[])
             ->check(CLI::ExistingPath);
 
         bool trace_flag = false;
-        app.add_flag("--trace", trace_flag, "Enable ZVM tracing");
+        app.add_flag("--trace", trace_flag, "Enable QRVM tracing");
 
         CLI11_PARSE(app, argc, argv);
 
-        zvmc::VM vm{zvmc_create_zvmone(), {{"O", "0"}}};
+        qrvmc::VM vm{qrvmc_create_qrvmone(), {{"O", "0"}}};
 
         if (trace_flag)
             vm.set_option("trace", "1");

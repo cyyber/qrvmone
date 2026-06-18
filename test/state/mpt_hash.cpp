@@ -1,4 +1,4 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2022 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -8,7 +8,7 @@
 #include "rlp.hpp"
 #include "state.hpp"
 
-namespace zvmone::state
+namespace qrvmone::state
 {
 namespace
 {
@@ -29,8 +29,17 @@ hash256 mpt_hash(const std::unordered_map<address, Account>& accounts)
     MPT trie;
     for (const auto& [addr, acc] : accounts)
     {
+        // After the 64-byte VM-word migration hash256 (= bytes64) is 64
+        // bytes wide with the 32-byte keccak hash sitting in the low
+        // half. Account-RLP storage_root/code_hash fields stay 32 bytes
+        // wide per the Ethereum spec, so explicitly slice to the low
+        // half before RLP-encoding.
+        const auto storage_root = mpt_hash(acc.storage);
+        const auto code_hash = keccak256(acc.code);
         trie.insert(keccak256(addr),
-            rlp::encode_tuple(acc.nonce, acc.balance, mpt_hash(acc.storage), keccak256(acc.code)));
+            rlp::encode_tuple(acc.nonce, acc.balance,
+                bytes_view{storage_root.bytes + 32, 32},
+                bytes_view{code_hash.bytes + 32, 32}));
     }
     return trie.hash();
 }
@@ -52,4 +61,4 @@ hash256 mpt_hash(std::span<const TransactionReceipt> receipts)
     return trie.hash();
 }
 
-}  // namespace zvmone::state
+}  // namespace qrvmone::state

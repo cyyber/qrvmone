@@ -1,4 +1,4 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2023 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
@@ -6,7 +6,7 @@
 #include <cassert>
 #include <system_error>
 
-namespace zvmone::state
+namespace qrvmone::state
 {
 
 enum ErrorCode : int
@@ -24,12 +24,12 @@ enum ErrorCode : int
     UNKNOWN_ERROR,
 };
 
-/// Obtains a reference to the static error category object for zvmone errors.
-inline const std::error_category& zvmone_category() noexcept
+/// Obtains a reference to the static error category object for qrvmone errors.
+inline const std::error_category& qrvmone_category() noexcept
 {
     struct Category : std::error_category
     {
-        [[nodiscard]] const char* name() const noexcept final { return "zvmone"; }
+        [[nodiscard]] const char* name() const noexcept final { return "qrvmone"; }
 
         [[nodiscard]] std::string message(int ev) const noexcept final
         {
@@ -68,13 +68,13 @@ inline const std::error_category& zvmone_category() noexcept
     return category_instance;
 }
 
-/// Creates error_code object out of an zvmone error code value.
+/// Creates error_code object out of an qrvmone error code value.
 /// This is used by std::error_code to implement implicit conversion
-/// zvmone::ErrorCode -> std::error_code, therefore the definition is
+/// qrvmone::ErrorCode -> std::error_code, therefore the definition is
 /// in the global namespace to match the definition of ethash_errc.
 inline std::error_code make_error_code(ErrorCode errc) noexcept
 {
-    return {errc, zvmone_category()};
+    return {errc, qrvmone_category()};
 }
 
-}  // namespace zvmone::state
+}  // namespace qrvmone::state

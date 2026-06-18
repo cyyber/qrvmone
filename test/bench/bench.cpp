@@ -1,4 +1,4 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2019 The zvmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -6,9 +6,9 @@
 #include "helpers.hpp"
 #include "synthetic_benchmarks.hpp"
 #include <benchmark/benchmark.h>
-#include <zvmc/loader.h>
-#include <zvmc/zvmc.hpp>
-#include <zvmone/zvmone.h>
+#include <qrvmc/loader.h>
+#include <qrvmc/qrvmc.hpp>
+#include <qrvmone/qrvmone.h>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -18,9 +18,9 @@ namespace fs = std::filesystem;
 
 using namespace benchmark;
 
-namespace zvmone::test
+namespace qrvmone::test
 {
-std::map<std::string_view, zvmc::VM> registered_vms;
+std::map<std::string_view, qrvmc::VM> registered_vms;
 
 namespace
 {
@@ -58,7 +58,7 @@ std::vector<BenchmarkCase::Input> load_inputs(const StateTransitionTest& state_t
 BenchmarkCase load_benchmark(const fs::path& path, const std::string& name_prefix)
 {
     std::ifstream f{path};
-    auto state_test = zvmone::test::load_state_test(f);
+    auto state_test = qrvmone::test::load_state_test(f);
 
     const auto name = name_prefix + path.stem().string();
     const auto code = state_test.pre_state.get(state_test.multi_tx.to.value()).code;
@@ -103,9 +103,9 @@ std::vector<BenchmarkCase> load_benchmarks_from_dir(  // NOLINT(misc-no-recursio
 
 void register_benchmarks(std::span<const BenchmarkCase> benchmark_cases)
 {
-    zvmc::VM* advanced_vm = nullptr;
-    zvmc::VM* baseline_vm = nullptr;
-    zvmc::VM* basel_cg_vm = nullptr;
+    qrvmc::VM* advanced_vm = nullptr;
+    qrvmc::VM* baseline_vm = nullptr;
+    qrvmc::VM* basel_cg_vm = nullptr;
     if (const auto it = registered_vms.find("advanced"); it != registered_vms.end())
         advanced_vm = &it->second;
     if (const auto it = registered_vms.find("baseline"); it != registered_vms.end())
@@ -163,7 +163,7 @@ void register_benchmarks(std::span<const BenchmarkCase> benchmark_cases)
             {
                 const auto name = std::string{vm_name} + "/total/" + case_name;
                 RegisterBenchmark(name, [&vm_ = vm, &b, &input](State& state) {
-                    bench_zvmc_execute(state, vm_, b.code, input.input, input.expected_output);
+                    bench_qrvmc_execute(state, vm_, b.code, input.input, input.expected_output);
                 })->Unit(kMicrosecond);
             }
         }
@@ -171,28 +171,28 @@ void register_benchmarks(std::span<const BenchmarkCase> benchmark_cases)
 }
 
 
-/// The error code for CLI arguments parsing error in zvmone-bench.
-/// The number tries to be different from ZVMC loading error codes.
+/// The error code for CLI arguments parsing error in qrvmone-bench.
+/// The number tries to be different from QRVMC loading error codes.
 constexpr auto cli_parsing_error = -3;
 
-/// Parses zvmone-bench CLI arguments and registers benchmark cases.
+/// Parses qrvmone-bench CLI arguments and registers benchmark cases.
 ///
 /// The following variants of number arguments are supported (including argv[0]):
 ///
-/// 1: zvmone-bench
-///    Uses zvmone VMs, only synthetic benchmarks are available.
-/// 2: zvmone-bench benchmarks_dir
-///    Uses zvmone VMs, loads all benchmarks from benchmarks_dir.
-/// 3: zvmone-bench zvmc_config benchmarks_dir
-///    The same as (2) but loads additional custom ZVMC VM.
-/// 4: zvmone-bench code_hex_file input_hex expected_output_hex.
-///    Uses zvmone VMs, registers custom benchmark with the code from the given file,
+/// 1: qrvmone-bench
+///    Uses qrvmone VMs, only synthetic benchmarks are available.
+/// 2: qrvmone-bench benchmarks_dir
+///    Uses qrvmone VMs, loads all benchmarks from benchmarks_dir.
+/// 3: qrvmone-bench qrvmc_config benchmarks_dir
+///    The same as (2) but loads additional custom QRVMC VM.
+/// 4: qrvmone-bench code_hex_file input_hex expected_output_hex.
+///    Uses qrvmone VMs, registers custom benchmark with the code from the given file,
 ///    and the given input. The benchmark will compare the output with the provided
 ///    expected one.
 std::tuple<int, std::vector<BenchmarkCase>> parseargs(int argc, char** argv)
 {
     // Arguments' placeholders:
-    std::string zvmc_config;
+    std::string qrvmc_config;
     std::string benchmarks_dir;
     std::string code_hex_file;
     std::string input_hex;
@@ -207,7 +207,7 @@ std::tuple<int, std::vector<BenchmarkCase>> parseargs(int argc, char** argv)
         benchmarks_dir = argv[1];
         break;
     case 3:
-        zvmc_config = argv[1];
+        qrvmc_config = argv[1];
         benchmarks_dir = argv[2];
         break;
     case 4:
@@ -220,21 +220,21 @@ std::tuple<int, std::vector<BenchmarkCase>> parseargs(int argc, char** argv)
         return {cli_parsing_error, {}};
     }
 
-    if (!zvmc_config.empty())
+    if (!qrvmc_config.empty())
     {
-        auto ec = zvmc_loader_error_code{};
-        registered_vms["external"] = zvmc::VM{zvmc_load_and_configure(zvmc_config.c_str(), &ec)};
+        auto ec = qrvmc_loader_error_code{};
+        registered_vms["external"] = qrvmc::VM{qrvmc_load_and_configure(qrvmc_config.c_str(), &ec)};
 
-        if (ec != ZVMC_LOADER_SUCCESS)
+        if (ec != QRVMC_LOADER_SUCCESS)
         {
-            if (const auto error = zvmc_last_error_msg())
-                std::cerr << "ZVMC loading error: " << error << "\n";
+            if (const auto error = qrvmc_last_error_msg())
+                std::cerr << "QRVMC loading error: " << error << "\n";
             else
-                std::cerr << "ZVMC loading error " << ec << "\n";
+                std::cerr << "QRVMC loading error " << ec << "\n";
             return {static_cast<int>(ec), {}};
         }
 
-        std::cout << "External VM: " << zvmc_config << "\n";
+        std::cout << "External VM: " << qrvmc_config << "\n";
     }
 
     if (!benchmarks_dir.empty())
@@ -256,11 +256,11 @@ std::tuple<int, std::vector<BenchmarkCase>> parseargs(int argc, char** argv)
     return {0, {}};
 }
 }  // namespace
-}  // namespace zvmone::test
+}  // namespace qrvmone::test
 
 int main(int argc, char** argv)
 {
-    using namespace zvmone::test;
+    using namespace qrvmone::test;
     try
     {
         Initialize(&argc, argv);  // Consumes --benchmark_ options.
@@ -271,9 +271,9 @@ int main(int argc, char** argv)
         if (ec != 0)
             return ec;
 
-        registered_vms["advanced"] = zvmc::VM{zvmc_create_zvmone(), {{"advanced", ""}}};
-        registered_vms["baseline"] = zvmc::VM{zvmc_create_zvmone()};
-        registered_vms["bnocgoto"] = zvmc::VM{zvmc_create_zvmone(), {{"cgoto", "no"}}};
+        registered_vms["advanced"] = qrvmc::VM{qrvmc_create_qrvmone(), {{"advanced", ""}}};
+        registered_vms["baseline"] = qrvmc::VM{qrvmc_create_qrvmone()};
+        registered_vms["bnocgoto"] = qrvmc::VM{qrvmc_create_qrvmone(), {{"cgoto", "no"}}};
         register_benchmarks(benchmark_cases);
         register_synthetic_benchmarks();
         RunSpecifiedBenchmarks();

@@ -1,4 +1,4 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2022 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -12,7 +12,7 @@
 #include <variant>
 #include <vector>
 
-namespace zvmone::state
+namespace qrvmone::state
 {
 class State
 {
@@ -69,12 +69,12 @@ public:
 struct Withdrawal
 {
     address recipient;
-    uint64_t amount_in_gwei = 0;  ///< The amount is denominated in gwei.
+    uint64_t amount_in_gplanck = 0;  ///< The amount is denominated in gplanck.
 
-    /// Returns withdrawal amount in wei.
+    /// Returns withdrawal amount in planck.
     [[nodiscard]] intx::uint256 get_amount() const noexcept
     {
-        return intx::uint256{amount_in_gwei} * 1'000'000'000;
+        return intx::uint256{amount_in_gplanck} * 1'000'000'000;
     }
 };
 
@@ -84,12 +84,12 @@ struct BlockInfo
     int64_t timestamp = 0;
     int64_t gas_limit = 0;
     address coinbase;
-    bytes32 prev_randao;
+    bytes64 prev_randao;
     uint64_t base_fee = 0;
     std::vector<Withdrawal> withdrawals;
 };
 
-using AccessList = std::vector<std::pair<address, std::vector<bytes32>>>;
+using AccessList = std::vector<std::pair<address, std::vector<bytes64>>>;
 
 struct Transaction
 {
@@ -123,7 +123,7 @@ struct Log
 struct TransactionReceipt
 {
     Transaction::Kind kind = Transaction::Kind::eip1559;
-    zvmc_status_code status = ZVMC_INTERNAL_ERROR;
+    qrvmc_status_code status = QRVMC_INTERNAL_ERROR;
     int64_t gas_used = 0;
     std::vector<Log> logs;
     BloomFilter logs_bloom_filter;
@@ -132,10 +132,10 @@ struct TransactionReceipt
 /// Finalize state after applying a "block" of transactions.
 ///
 /// Applies withdrawals and deletes empty touched accounts.
-void finalize(State& state, zvmc_revision rev, std::span<Withdrawal> withdrawals);
+void finalize(State& state, qrvmc_revision rev, std::span<Withdrawal> withdrawals);
 
 [[nodiscard]] std::variant<TransactionReceipt, std::error_code> transition(
-    State& state, const BlockInfo& block, const Transaction& tx, zvmc_revision rev, zvmc::VM& vm);
+    State& state, const BlockInfo& block, const Transaction& tx, qrvmc_revision rev, qrvmc::VM& vm);
 
 /// Defines how to RLP-encode a Transaction.
 [[nodiscard]] bytes rlp_encode(const Transaction& tx);
@@ -146,4 +146,4 @@ void finalize(State& state, zvmc_revision rev, std::span<Withdrawal> withdrawals
 /// Defines how to RLP-encode a Log.
 [[nodiscard]] bytes rlp_encode(const Log& log);
 
-}  // namespace zvmone::state
+}  // namespace qrvmone::state

@@ -1,4 +1,4 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2022 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
@@ -10,11 +10,11 @@
 namespace fs = std::filesystem;
 namespace json = nlohmann;
 
-namespace zvmone::test
+namespace qrvmone::test
 {
 
-/// Translates tests fork name to ZVM revision
-zvmc_revision to_rev(std::string_view s);
+/// Translates tests fork name to QRVM revision
+qrvmc_revision to_rev(std::string_view s);
 
 struct TestMultiTransaction : state::Transaction
 {
@@ -54,7 +54,7 @@ struct StateTransitionTest
             bool exception = false;
         };
 
-        zvmc_revision rev;
+        qrvmc_revision rev;
         std::vector<Expectation> expectations;
     };
 
@@ -85,7 +85,7 @@ state::Transaction from_json<state::Transaction>(const json::json& j);
 
 StateTransitionTest load_state_test(std::istream& input);
 
-void run_state_test(const StateTransitionTest& test, zvmc::VM& vm);
+void run_state_test(const StateTransitionTest& test, qrvmc::VM& vm);
 
 /// Computes the hash of the RLP-encoded list of transaction logs.
 /// This method is only used in tests.
@@ -102,7 +102,7 @@ inline std::string hex0x(const intx::uint256& v)
 /// Encodes bytes as hex with 0x prefix.
 inline std::string hex0x(const bytes_view& v)
 {
-    return "0x" + zvmc::hex(v);
+    return "0x" + qrvmc::hex(v);
 }
 
-}  // namespace zvmone::test
+}  // namespace qrvmone::test

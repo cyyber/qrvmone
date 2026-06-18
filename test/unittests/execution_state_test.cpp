@@ -1,66 +1,66 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2020 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
 #include <gtest/gtest.h>
-#include <zvmone/advanced_analysis.hpp>
-#include <zvmone/execution_state.hpp>
+#include <qrvmone/advanced_analysis.hpp>
+#include <qrvmone/execution_state.hpp>
 #include <type_traits>
 
-static_assert(std::is_default_constructible_v<zvmone::ExecutionState>);
-static_assert(!std::is_move_constructible_v<zvmone::ExecutionState>);
-static_assert(!std::is_copy_constructible_v<zvmone::ExecutionState>);
-static_assert(!std::is_move_assignable_v<zvmone::ExecutionState>);
-static_assert(!std::is_copy_assignable_v<zvmone::ExecutionState>);
+static_assert(std::is_default_constructible_v<qrvmone::ExecutionState>);
+static_assert(!std::is_move_constructible_v<qrvmone::ExecutionState>);
+static_assert(!std::is_copy_constructible_v<qrvmone::ExecutionState>);
+static_assert(!std::is_move_assignable_v<qrvmone::ExecutionState>);
+static_assert(!std::is_copy_assignable_v<qrvmone::ExecutionState>);
 
-static_assert(std::is_default_constructible_v<zvmone::advanced::AdvancedExecutionState>);
-static_assert(!std::is_move_constructible_v<zvmone::advanced::AdvancedExecutionState>);
-static_assert(!std::is_copy_constructible_v<zvmone::advanced::AdvancedExecutionState>);
-static_assert(!std::is_move_assignable_v<zvmone::advanced::AdvancedExecutionState>);
-static_assert(!std::is_copy_assignable_v<zvmone::advanced::AdvancedExecutionState>);
+static_assert(std::is_default_constructible_v<qrvmone::advanced::AdvancedExecutionState>);
+static_assert(!std::is_move_constructible_v<qrvmone::advanced::AdvancedExecutionState>);
+static_assert(!std::is_copy_constructible_v<qrvmone::advanced::AdvancedExecutionState>);
+static_assert(!std::is_move_assignable_v<qrvmone::advanced::AdvancedExecutionState>);
+static_assert(!std::is_copy_assignable_v<qrvmone::advanced::AdvancedExecutionState>);
 
 TEST(execution_state, construct)
 {
-    zvmc_message msg{};
+    qrvmc_message msg{};
     msg.gas = -1;
-    const zvmc_host_interface host_interface{};
+    const qrvmc_host_interface host_interface{};
     const uint8_t code[]{0x0f};
-    const zvmone::ExecutionState st{
-        msg, ZVMC_MAX_REVISION, host_interface, nullptr, {code, std::size(code)}};
+    const qrvmone::ExecutionState st{
+        msg, QRVMC_MAX_REVISION, host_interface, nullptr, {code, std::size(code)}};
 
     EXPECT_EQ(st.memory.size(), 0);
     EXPECT_EQ(st.msg, &msg);
-    EXPECT_EQ(st.rev, ZVMC_MAX_REVISION);
+    EXPECT_EQ(st.rev, QRVMC_MAX_REVISION);
     EXPECT_EQ(st.return_data.size(), 0);
-    EXPECT_EQ(st.status, ZVMC_SUCCESS);
+    EXPECT_EQ(st.status, QRVMC_SUCCESS);
     EXPECT_EQ(st.output_offset, 0);
     EXPECT_EQ(st.output_size, 0);
 }
 
 TEST(execution_state, default_construct)
 {
-    const zvmone::ExecutionState st;
+    const qrvmone::ExecutionState st;
 
     EXPECT_EQ(st.memory.size(), 0);
     EXPECT_EQ(st.msg, nullptr);
-    EXPECT_EQ(st.rev, ZVMC_SHANGHAI);
+    EXPECT_EQ(st.rev, QRVMC_ZOND);
     EXPECT_EQ(st.return_data.size(), 0);
-    EXPECT_EQ(st.status, ZVMC_SUCCESS);
+    EXPECT_EQ(st.status, QRVMC_SUCCESS);
     EXPECT_EQ(st.output_offset, 0);
     EXPECT_EQ(st.output_size, 0);
 }
 
 TEST(execution_state, default_construct_advanced)
 {
-    const zvmone::advanced::AdvancedExecutionState st;
+    const qrvmone::advanced::AdvancedExecutionState st;
 
     EXPECT_EQ(st.gas_left, 0);
     EXPECT_EQ(st.stack.size(), 0);
     EXPECT_EQ(st.memory.size(), 0);
     EXPECT_EQ(st.msg, nullptr);
-    EXPECT_EQ(st.rev, ZVMC_SHANGHAI);
+    EXPECT_EQ(st.rev, QRVMC_ZOND);
     EXPECT_EQ(st.return_data.size(), 0);
-    EXPECT_EQ(st.status, ZVMC_SUCCESS);
+    EXPECT_EQ(st.status, QRVMC_SUCCESS);
     EXPECT_EQ(st.output_offset, 0);
     EXPECT_EQ(st.output_size, 0);
 
@@ -70,18 +70,18 @@ TEST(execution_state, default_construct_advanced)
 
 TEST(execution_state, reset_advanced)
 {
-    const zvmc_message msg{};
-    const zvmone::advanced::AdvancedCodeAnalysis analysis;
+    const qrvmc_message msg{};
+    const qrvmone::advanced::AdvancedCodeAnalysis analysis;
 
-    zvmone::advanced::AdvancedExecutionState st;
+    qrvmone::advanced::AdvancedExecutionState st;
     st.gas_left = 1;
     st.gas_refund = 2;
     st.stack.push({});
     st.memory.grow(64);
     st.msg = &msg;
-    st.rev = ZVMC_SHANGHAI;
+    st.rev = QRVMC_ZOND;
     st.return_data.push_back('0');
-    st.status = ZVMC_FAILURE;
+    st.status = QRVMC_FAILURE;
     st.output_offset = 3;
     st.output_size = 4;
     st.current_block_cost = 5;
@@ -92,21 +92,21 @@ TEST(execution_state, reset_advanced)
     EXPECT_EQ(st.stack.size(), 1);
     EXPECT_EQ(st.memory.size(), 64);
     EXPECT_EQ(st.msg, &msg);
-    EXPECT_EQ(st.rev, ZVMC_SHANGHAI);
+    EXPECT_EQ(st.rev, QRVMC_ZOND);
     EXPECT_EQ(st.return_data.size(), 1);
-    EXPECT_EQ(st.status, ZVMC_FAILURE);
+    EXPECT_EQ(st.status, QRVMC_FAILURE);
     EXPECT_EQ(st.output_offset, 3);
     EXPECT_EQ(st.output_size, 4u);
     EXPECT_EQ(st.current_block_cost, 5u);
     EXPECT_EQ(st.analysis.advanced, &analysis);
 
     {
-        zvmc_message msg2{};
+        qrvmc_message msg2{};
         msg2.gas = 13;
-        const zvmc_host_interface host_interface2{};
+        const qrvmc_host_interface host_interface2{};
         const uint8_t code2[]{0x80, 0x81};
 
-        st.reset(msg2, ZVMC_SHANGHAI, host_interface2, nullptr, {code2, std::size(code2)});
+        st.reset(msg2, QRVMC_ZOND, host_interface2, nullptr, {code2, std::size(code2)});
 
         // TODO: We are not able to test HostContext with current API. It may require an execution
         //       test.
@@ -115,9 +115,9 @@ TEST(execution_state, reset_advanced)
         EXPECT_EQ(st.stack.size(), 0);
         EXPECT_EQ(st.memory.size(), 0);
         EXPECT_EQ(st.msg, &msg2);
-        EXPECT_EQ(st.rev, ZVMC_SHANGHAI);
+        EXPECT_EQ(st.rev, QRVMC_ZOND);
         EXPECT_EQ(st.return_data.size(), 0);
-        EXPECT_EQ(st.status, ZVMC_SUCCESS);
+        EXPECT_EQ(st.status, QRVMC_SUCCESS);
         EXPECT_EQ(st.output_offset, 0);
         EXPECT_EQ(st.output_size, 0);
         EXPECT_EQ(st.current_block_cost, 0u);
@@ -127,8 +127,8 @@ TEST(execution_state, reset_advanced)
 
 TEST(execution_state, stack_reset)
 {
-    zvmone::StackSpace stack_space;
-    zvmone::advanced::Stack stack{stack_space.bottom()};
+    qrvmone::StackSpace stack_space;
+    qrvmone::advanced::Stack stack{stack_space.bottom()};
     EXPECT_EQ(stack.size(), 0);
 
     stack.push({});
@@ -143,8 +143,8 @@ TEST(execution_state, stack_reset)
 
 TEST(execution_state, const_stack)
 {
-    zvmone::StackSpace stack_space;
-    zvmone::advanced::Stack stack{stack_space.bottom()};
+    qrvmone::StackSpace stack_space;
+    qrvmone::advanced::Stack stack{stack_space.bottom()};
     stack.push(1);
     stack.push(2);
 
@@ -156,18 +156,18 @@ TEST(execution_state, const_stack)
 
 TEST(execution_state, memory_view)
 {
-    zvmone::Memory memory;
-    memory.grow(32);
+    qrvmone::Memory memory;
+    memory.grow(64);
 
-    const zvmone::bytes_view view{memory.data(), memory.size()};
-    ASSERT_EQ(view.size(), 32);
+    const qrvmone::bytes_view view{memory.data(), memory.size()};
+    ASSERT_EQ(view.size(), 64);
     EXPECT_EQ(view[0], 0x00);
     EXPECT_EQ(view[1], 0x00);
     EXPECT_EQ(view[2], 0x00);
 
     memory[0] = 0xc0;
     memory[2] = 0xc2;
-    ASSERT_EQ(view.size(), 32);
+    ASSERT_EQ(view.size(), 64);
     EXPECT_EQ(view[0], 0xc0);
     EXPECT_EQ(view[1], 0x00);
     EXPECT_EQ(view[2], 0xc2);

@@ -1,10 +1,10 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2023 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
 #include "state_transition.hpp"
 
-namespace zvmone::test
+namespace qrvmone::test
 {
 void state_transition::SetUp()
 {
@@ -18,11 +18,11 @@ void state_transition::SetUp()
 void state_transition::TearDown()
 {
     auto& state = pre;
-    const auto res = zvmone::state::transition(state, block, tx, rev, vm);
+    const auto res = qrvmone::state::transition(state, block, tx, rev, vm);
     ASSERT_TRUE(holds_alternative<TransactionReceipt>(res))
         << std::get<std::error_code>(res).message();
     const auto& receipt = std::get<TransactionReceipt>(res);
-    zvmone::state::finalize(state, rev, block.withdrawals);
+    qrvmone::state::finalize(state, rev, block.withdrawals);
 
     EXPECT_EQ(receipt.status, expect.status);
     if (expect.gas_used.has_value())
@@ -72,4 +72,4 @@ void state_transition::TearDown()
         EXPECT_TRUE(expect.post.contains(addr)) << "unexpected account " << addr;
     }
 }
-}  // namespace zvmone::test
+}  // namespace qrvmone::test

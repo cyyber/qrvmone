@@ -1,9 +1,9 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2020 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-namespace zvmone::test
+namespace qrvmone::test
 {
 void register_synthetic_benchmarks();
 }

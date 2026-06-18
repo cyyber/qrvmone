@@ -1,22 +1,22 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2019 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
 #include <gtest/gtest.h>
 #include <test/utils/bytecode.hpp>
-#include <zvmone/advanced_analysis.hpp>
-#include <zvmone/instructions_traits.hpp>
+#include <qrvmone/advanced_analysis.hpp>
+#include <qrvmone/instructions_traits.hpp>
 
 namespace
 {
-// Temporarily include ZVMC instructions in an inline namespace so that zvmc_opcode enum
-// doesn't name clash with zvmone::Opcode but the zvmc_ functions are accessible.
-#include <zvmc/instructions.h>
+// Temporarily include QRVMC instructions in an inline namespace so that qrvmc_opcode enum
+// doesn't name clash with qrvmone::Opcode but the qrvmc_ functions are accessible.
+#include <qrvmc/instructions.h>
 }  // namespace
 
-using namespace zvmone;
+using namespace qrvmone;
 
-namespace zvmone::test
+namespace qrvmone::test
 {
 namespace
 {
@@ -24,7 +24,7 @@ constexpr int unspecified = -1000000;
 
 constexpr int get_revision_defined_in(size_t op) noexcept
 {
-    for (size_t r = ZVMC_SHANGHAI; r <= ZVMC_MAX_REVISION; ++r)
+    for (size_t r = QRVMC_ZOND; r <= QRVMC_MAX_REVISION; ++r)
     {
         if (instr::gas_costs[r][op] != instr::undefined)
             return static_cast<int>(r);
@@ -51,9 +51,13 @@ constexpr void validate_traits_of() noexcept
 {
     constexpr auto tr = instr::traits[Op];
 
-    // immediate_size
+    // immediate_size. After the 64-byte-word migration the PUSH family
+    // extends through PUSH64; the PUSH33..PUSH64 range sits at
+    // 0x80..0x9f, one contiguous block with PUSH1..PUSH32 at 0x60..0x7f.
     if constexpr (Op >= OP_PUSH1 && Op <= OP_PUSH32)
         static_assert(tr.immediate_size == Op - OP_PUSH1 + 1);
+    else if constexpr (Op >= OP_PUSH33 && Op <= OP_PUSH64)
+        static_assert(tr.immediate_size == Op - OP_PUSH33 + 33);
     else
         static_assert(tr.immediate_size == 0);
 
@@ -82,22 +86,22 @@ static_assert(instr::has_const_gas_cost(OP_ADD));
 static_assert(instr::has_const_gas_cost(OP_PUSH1));
 }  // namespace
 
-}  // namespace zvmone::test
+}  // namespace qrvmone::test
 
-TEST(instructions, compare_with_zvmc_instruction_tables)
+TEST(instructions, compare_with_qrvmc_instruction_tables)
 {
-    for (int r = ZVMC_SHANGHAI; r <= ZVMC_MAX_REVISION; ++r)
+    for (int r = QRVMC_ZOND; r <= QRVMC_MAX_REVISION; ++r)
     {
-        const auto rev = static_cast<zvmc_revision>(r);
+        const auto rev = static_cast<qrvmc_revision>(r);
         const auto& instr_tbl = instr::gas_costs[rev];
-        const auto& zvmone_tbl = advanced::get_op_table(rev);
-        const auto* zvmc_tbl = zvmc_get_instruction_metrics_table(rev);
+        const auto& qrvmone_tbl = advanced::get_op_table(rev);
+        const auto* qrvmc_tbl = qrvmc_get_instruction_metrics_table(rev);
 
-        for (size_t i = 0; i < zvmone_tbl.size(); ++i)
+        for (size_t i = 0; i < qrvmone_tbl.size(); ++i)
         {
             const auto gas_cost = (instr_tbl[i] != instr::undefined) ? instr_tbl[i] : 0;
-            const auto& metrics = zvmone_tbl[i];
-            const auto& ref_metrics = zvmc_tbl[i];
+            const auto& metrics = qrvmone_tbl[i];
+            const auto& ref_metrics = qrvmc_tbl[i];
 
             const auto case_descr = [rev](size_t opcode) {
                 auto case_descr_str = std::ostringstream{};
@@ -116,24 +120,24 @@ TEST(instructions, compare_with_zvmc_instruction_tables)
 
 TEST(instructions, compare_undefined_instructions)
 {
-    for (int r = ZVMC_SHANGHAI; r <= ZVMC_MAX_REVISION; ++r)
+    for (int r = QRVMC_ZOND; r <= QRVMC_MAX_REVISION; ++r)
     {
-        const auto rev = static_cast<zvmc_revision>(r);
+        const auto rev = static_cast<qrvmc_revision>(r);
         const auto& instr_tbl = instr::gas_costs[rev];
-        const auto* zvmc_names_tbl = zvmc_get_instruction_names_table(rev);
+        const auto* qrvmc_names_tbl = qrvmc_get_instruction_names_table(rev);
 
         for (size_t i = 0; i < instr_tbl.size(); ++i)
         {
-            EXPECT_EQ(instr_tbl[i] == instr::undefined, zvmc_names_tbl[i] == nullptr) << i;
+            EXPECT_EQ(instr_tbl[i] == instr::undefined, qrvmc_names_tbl[i] == nullptr) << i;
         }
     }
 }
 
-TEST(instructions, compare_with_zvmc_instruction_names)
+TEST(instructions, compare_with_qrvmc_instruction_names)
 {
-    const auto* zvmc_tbl = zvmc_get_instruction_names_table(ZVMC_MAX_REVISION);
+    const auto* qrvmc_tbl = qrvmc_get_instruction_names_table(QRVMC_MAX_REVISION);
     for (size_t i = 0; i < instr::traits.size(); ++i)
     {
-        EXPECT_STREQ(instr::traits[i].name, zvmc_tbl[i]);
+        EXPECT_STREQ(instr::traits[i].name, qrvmc_tbl[i]);
     }
 }

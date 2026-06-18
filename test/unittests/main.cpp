@@ -1,25 +1,25 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2019 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
 #include "vm_loader.hpp"
 #include <gtest/gtest.h>
-#include <zvmc/loader.h>
+#include <qrvmc/loader.h>
 #include <iostream>
 #include <string>
 #include <vector>
 
-/// The loaded ZVMC module.
-static zvmc::VM zvmc_module;
+/// The loaded QRVMC module.
+static qrvmc::VM qrvmc_module;
 
-zvmc::VM& get_vm() noexcept
+qrvmc::VM& get_vm() noexcept
 {
-    return zvmc_module;
+    return qrvmc_module;
 }
 
 /// Simple and copy&paste distributable CLI parser.
 ///
-/// TODO: Originally taken from ZVMC and modified here. Copy it back.
+/// TODO: Originally taken from QRVMC and modified here. Copy it back.
 class cli_parser
 {
 public:
@@ -144,31 +144,31 @@ int main(int argc, char* argv[])
 {
     try
     {
-        auto cli = cli_parser{"ZVM Test", PROJECT_VERSION,
-            "Testing tool for ZVMC-compatible Zond Virtual Machine implementations.\n"
-            "Powered by the zvmone project.\n\n"
-            "ZVMC:   https://github.com/theqrl/zvmc\n"
-            "zvmone: https://github.com/theqrl/zvmone",
+        auto cli = cli_parser{"QRVM Test", PROJECT_VERSION,
+            "Testing tool for QRVMC-compatible Quantum Resistant Virtual Machine implementations.\n"
+            "Powered by the qrvmone project.\n\n"
+            "QRVMC:   https://github.com/theqrl/qrvmc\n"
+            "qrvmone: https://github.com/theqrl/qrvmone",
             {"MODULE"}};
         cli.set_preprocessor(testing::InitGoogleTest);
 
         if (const auto error_code = cli.parse(argc, argv, std::cout, std::cerr); error_code <= 0)
             return error_code;
 
-        const auto& zvmc_config = cli.arguments[0];
-        zvmc_loader_error_code ec;
-        zvmc_module = zvmc::VM{zvmc_load_and_configure(zvmc_config.c_str(), &ec)};
+        const auto& qrvmc_config = cli.arguments[0];
+        qrvmc_loader_error_code ec;
+        qrvmc_module = qrvmc::VM{qrvmc_load_and_configure(qrvmc_config.c_str(), &ec)};
 
-        if (ec != ZVMC_LOADER_SUCCESS)
+        if (ec != QRVMC_LOADER_SUCCESS)
         {
-            if (const auto error = zvmc_last_error_msg())
-                std::cerr << "ZVMC loading error: " << error << "\n";
+            if (const auto error = qrvmc_last_error_msg())
+                std::cerr << "QRVMC loading error: " << error << "\n";
             else
-                std::cerr << "ZVMC loading error " << ec << "\n";
+                std::cerr << "QRVMC loading error " << ec << "\n";
             return static_cast<int>(ec);
         }
 
-        std::cout << "Testing " << zvmc_config << "\n\n";
+        std::cout << "Testing " << qrvmc_config << "\n\n";
         return RUN_ALL_TESTS();
     }
     catch (const std::exception& ex)

@@ -1,11 +1,11 @@
-# zvmone: Fast Zond Virtual Machine implementation
+# qrvmone: Fast Quantum Resistant Virtual Machine implementation
 # Copyright 2019-2020 The evmone Authors.
 # SPDX-License-Identifier: Apache-2.0
 
 include(GoogleTest)
-include(${PROJECT_SOURCE_DIR}/zvmc/cmake/ZVMC.cmake)
+include(${PROJECT_SOURCE_DIR}/qrvmc/cmake/QRVMC.cmake)
 
-set(zvmone_private_include_dir ${PROJECT_SOURCE_DIR}/lib)
+set(qrvmone_private_include_dir ${PROJECT_SOURCE_DIR}/lib)
 
 hunter_add_package(GTest)
 find_package(GTest CONFIG REQUIRED)
@@ -22,11 +22,11 @@ add_subdirectory(statetest)
 add_subdirectory(t8n)
 add_subdirectory(unittests)
 
-set(targets zvmone-bench zvmone-bench-internal zvmone-state zvmone-statetest zvmone-t8n zvmone-unittests)
+set(targets qrvmone-bench qrvmone-bench-internal qrvmone-state qrvmone-statetest qrvmone-t8n qrvmone-unittests)
 
-if(ZVMONE_FUZZING)
+if(QRVMONE_FUZZING)
     add_subdirectory(fuzzer)
-    list(APPEND targets zvmone-fuzzer)
+    list(APPEND targets qrvmone-fuzzer)
 endif()
 
 set_target_properties(
@@ -36,11 +36,11 @@ set_target_properties(
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
 )
 
-get_target_property(type zvmone TYPE)
+get_target_property(type qrvmone TYPE)
 if(type STREQUAL SHARED_LIBRARY)
-    zvmc_add_vm_test(NAME ${PROJECT_NAME}/zvmc-vmtester TARGET zvmone)
+    qrvmc_add_vm_test(NAME ${PROJECT_NAME}/qrvmc-vmtester TARGET qrvmone)
 
-    if(TARGET zvm-test)
-        add_test(NAME ${PROJECT_NAME}/zvm-test COMMAND zvm-test $<TARGET_FILE:zvmone>)
+    if(TARGET qrvm-test)
+        add_test(NAME ${PROJECT_NAME}/qrvm-test COMMAND qrvm-test $<TARGET_FILE:qrvmone>)
     endif()
 endif()

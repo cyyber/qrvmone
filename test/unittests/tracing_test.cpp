@@ -1,38 +1,38 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2021 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
 #include "test/utils/bytecode.hpp"
 #include <gmock/gmock.h>
-#include <zvmc/mocked_host.hpp>
-#include <zvmc/zvmc.hpp>
-#include <zvmone/instructions_traits.hpp>
-#include <zvmone/tracing.hpp>
-#include <zvmone/vm.hpp>
-#include <zvmone/zvmone.h>
+#include <qrvmc/mocked_host.hpp>
+#include <qrvmc/qrvmc.hpp>
+#include <qrvmone/instructions_traits.hpp>
+#include <qrvmone/tracing.hpp>
+#include <qrvmone/vm.hpp>
+#include <qrvmone/qrvmone.h>
 
 using namespace testing;
 
 class tracing : public Test
 {
 private:
-    zvmc::VM m_baseline_vm;
+    qrvmc::VM m_baseline_vm;
 
 protected:
-    zvmone::VM& vm;
+    qrvmone::VM& vm;
 
     std::ostringstream trace_stream;
 
     tracing()
-      : m_baseline_vm{zvmc_create_zvmone()},
-        vm{*static_cast<zvmone::VM*>(m_baseline_vm.get_raw_pointer())}
+      : m_baseline_vm{qrvmc_create_qrvmone()},
+        vm{*static_cast<qrvmone::VM*>(m_baseline_vm.get_raw_pointer())}
     {}
 
     std::string trace(
-        bytes_view code, int32_t depth = 0, uint32_t flags = 0, zvmc_revision rev = ZVMC_SHANGHAI)
+        bytes_view code, int32_t depth = 0, uint32_t flags = 0, qrvmc_revision rev = QRVMC_ZOND)
     {
-        zvmc::MockedHost host;
-        zvmc_message msg{};
+        qrvmc::MockedHost host;
+        qrvmc_message msg{};
         msg.depth = depth;
         msg.flags = flags;
         msg.gas = 1000000;
@@ -42,26 +42,26 @@ protected:
         return result;
     }
 
-    class OpcodeTracer final : public zvmone::Tracer
+    class OpcodeTracer final : public qrvmone::Tracer
     {
         std::string m_name;
         std::ostringstream& m_trace;
         bytes_view m_code;
 
         void on_execution_start(
-            zvmc_revision /*rev*/, const zvmc_message& /*msg*/, bytes_view code) noexcept override
+            qrvmc_revision /*rev*/, const qrvmc_message& /*msg*/, bytes_view code) noexcept override
         {
             m_code = code;
         }
 
-        void on_execution_end(const zvmc_result& /*result*/) noexcept override { m_code = {}; }
+        void on_execution_end(const qrvmc_result& /*result*/) noexcept override { m_code = {}; }
 
-        void on_instruction_start(uint32_t pc, const intx::uint256* /*stack_top*/,
+        void on_instruction_start(uint32_t pc, const intx::uint512* /*stack_top*/,
             int /*stack_height*/, int64_t /*gas*/,
-            const zvmone::ExecutionState& /*state*/) noexcept override
+            const qrvmone::ExecutionState& /*state*/) noexcept override
         {
             const auto opcode = m_code[pc];
-            m_trace << m_name << pc << ":" << zvmone::instr::traits[opcode].name << " ";
+            m_trace << m_name << pc << ":" << qrvmone::instr::traits[opcode].name << " ";
         }
 
     public:
@@ -70,21 +70,21 @@ protected:
         {}
     };
 
-    class Inspector final : public zvmone::Tracer
+    class Inspector final : public qrvmone::Tracer
     {
         bytes m_last_code;
 
         void on_execution_start(
-            zvmc_revision /*rev*/, const zvmc_message& /*msg*/, bytes_view code) noexcept override
+            qrvmc_revision /*rev*/, const qrvmc_message& /*msg*/, bytes_view code) noexcept override
         {
             m_last_code = code;
         }
 
-        void on_execution_end(const zvmc_result& /*result*/) noexcept override {}
+        void on_execution_end(const qrvmc_result& /*result*/) noexcept override {}
 
-        void on_instruction_start(uint32_t /*pc*/, const intx::uint256* /*stack_top*/,
+        void on_instruction_start(uint32_t /*pc*/, const intx::uint512* /*stack_top*/,
             int /*stack_height*/, int64_t /*gas*/,
-            const zvmone::ExecutionState& /*state*/) noexcept override
+            const qrvmone::ExecutionState& /*state*/) noexcept override
         {}
 
     public:
@@ -126,7 +126,7 @@ TEST_F(tracing, three_tracers)
 
 TEST_F(tracing, histogram)
 {
-    vm.add_tracer(zvmone::create_histogram_tracer(trace_stream));
+    vm.add_tracer(qrvmone::create_histogram_tracer(trace_stream));
 
     trace_stream << '\n';
     EXPECT_EQ(trace(add(0, 0)), R"(
@@ -139,7 +139,7 @@ PUSH1,2
 
 TEST_F(tracing, histogram_undefined_instruction)
 {
-    vm.add_tracer(zvmone::create_histogram_tracer(trace_stream));
+    vm.add_tracer(qrvmone::create_histogram_tracer(trace_stream));
 
     trace_stream << '\n';
     EXPECT_EQ(trace(bytecode{"EF"}), R"(
@@ -151,7 +151,7 @@ opcode,count
 
 TEST_F(tracing, histogram_internal_call)
 {
-    vm.add_tracer(zvmone::create_histogram_tracer(trace_stream));
+    vm.add_tracer(qrvmone::create_histogram_tracer(trace_stream));
     trace_stream << '\n';
     EXPECT_EQ(trace(push(0) + OP_DUP1 + OP_SWAP1 + OP_POP + OP_POP, 1), R"(
 --- # HISTOGRAM depth=1
@@ -165,11 +165,11 @@ SWAP1,1
 
 TEST_F(tracing, trace)
 {
-    vm.add_tracer(zvmone::create_instruction_tracer(trace_stream));
+    vm.add_tracer(qrvmone::create_instruction_tracer(trace_stream));
 
     trace_stream << '\n';
     EXPECT_EQ(trace(add(2, 3)), R"(
-{"depth":0,"rev":"Shanghai","static":false}
+{"depth":0,"rev":"Zond","static":false}
 {"pc":0,"op":96,"opName":"PUSH1","gas":0xf4240,"stack":[],"memorySize":0}
 {"pc":2,"op":96,"opName":"PUSH1","gas":0xf423d,"stack":["0x3"],"memorySize":0}
 {"pc":4,"op":1,"opName":"ADD","gas":0xf423a,"stack":["0x3","0x2"],"memorySize":0}
@@ -179,12 +179,12 @@ TEST_F(tracing, trace)
 
 TEST_F(tracing, trace_stack)
 {
-    vm.add_tracer(zvmone::create_instruction_tracer(trace_stream));
+    vm.add_tracer(qrvmone::create_instruction_tracer(trace_stream));
 
     const auto code = push(1) + push(2) + push(3) + push(4) + OP_ADD + OP_ADD + OP_ADD;
     trace_stream << '\n';
     EXPECT_EQ(trace(code), R"(
-{"depth":0,"rev":"Shanghai","static":false}
+{"depth":0,"rev":"Zond","static":false}
 {"pc":0,"op":96,"opName":"PUSH1","gas":0xf4240,"stack":[],"memorySize":0}
 {"pc":2,"op":96,"opName":"PUSH1","gas":0xf423d,"stack":["0x1"],"memorySize":0}
 {"pc":4,"op":96,"opName":"PUSH1","gas":0xf423a,"stack":["0x1","0x2"],"memorySize":0}
@@ -198,12 +198,12 @@ TEST_F(tracing, trace_stack)
 
 TEST_F(tracing, trace_error)
 {
-    vm.add_tracer(zvmone::create_instruction_tracer(trace_stream));
+    vm.add_tracer(qrvmone::create_instruction_tracer(trace_stream));
 
     const auto code = bytecode{OP_POP};
     trace_stream << '\n';
     EXPECT_EQ(trace(code), R"(
-{"depth":0,"rev":"Shanghai","static":false}
+{"depth":0,"rev":"Zond","static":false}
 {"pc":0,"op":80,"opName":"POP","gas":0xf4240,"stack":[],"memorySize":0}
 {"error":"stack underflow","gas":0x0,"gasUsed":0xf4240,"output":""}
 )");
@@ -211,70 +211,78 @@ TEST_F(tracing, trace_error)
 
 TEST_F(tracing, trace_output)
 {
-    vm.add_tracer(zvmone::create_instruction_tracer(trace_stream));
+    vm.add_tracer(qrvmone::create_instruction_tracer(trace_stream));
 
     const auto code = push(0xabcdef) + ret_top();
     trace_stream << '\n';
+    // After the 64-byte VM-word migration MSTORE writes 64 bytes (memorySize
+    // jumps to 64) and ret_top() emits RETURN with offset=0x20, size=0x20 so
+    // the output is the low 32 bytes of the 64-byte word at offset 0.
     EXPECT_EQ(trace(code), R"(
-{"depth":0,"rev":"Shanghai","static":false}
+{"depth":0,"rev":"Zond","static":false}
 {"pc":0,"op":98,"opName":"PUSH3","gas":0xf4240,"stack":[],"memorySize":0}
 {"pc":4,"op":96,"opName":"PUSH1","gas":0xf423d,"stack":["0xabcdef"],"memorySize":0}
 {"pc":6,"op":82,"opName":"MSTORE","gas":0xf423a,"stack":["0xabcdef","0x0"],"memorySize":0}
-{"pc":7,"op":96,"opName":"PUSH1","gas":0xf4234,"stack":[],"memorySize":32}
-{"pc":9,"op":96,"opName":"PUSH1","gas":0xf4231,"stack":["0x20"],"memorySize":32}
-{"pc":11,"op":243,"opName":"RETURN","gas":0xf422e,"stack":["0x20","0x0"],"memorySize":32}
+{"pc":7,"op":96,"opName":"PUSH1","gas":0xf4234,"stack":[],"memorySize":64}
+{"pc":9,"op":96,"opName":"PUSH1","gas":0xf4231,"stack":["0x20"],"memorySize":64}
+{"pc":11,"op":243,"opName":"RETURN","gas":0xf422e,"stack":["0x20","0x20"],"memorySize":64}
 {"error":null,"gas":0xf422e,"gasUsed":0x12,"output":"0000000000000000000000000000000000000000000000000000000000abcdef"}
 )");
 }
 
 TEST_F(tracing, trace_revert)
 {
-    vm.add_tracer(zvmone::create_instruction_tracer(trace_stream));
+    vm.add_tracer(qrvmone::create_instruction_tracer(trace_stream));
 
     const auto code = mstore(0, 0x0e4404) + push(3) + push(29) + OP_REVERT;
     trace_stream << '\n';
+    // 64-byte VM-word: MSTORE writes 64 bytes at offset 0 (memorySize=64),
+    // with the 256-bit value 0x0e4404 right-aligned in the low half
+    // (bytes[61..63] = 0x0e,0x44,0x04). REVERT pops [size=3, offset=0x1d]
+    // so output = memory[29..32] which sits in the upper-half zero region
+    // and is therefore three zero bytes.
     EXPECT_EQ(trace(code), R"(
-{"depth":0,"rev":"Shanghai","static":false}
+{"depth":0,"rev":"Zond","static":false}
 {"pc":0,"op":98,"opName":"PUSH3","gas":0xf4240,"stack":[],"memorySize":0}
 {"pc":4,"op":96,"opName":"PUSH1","gas":0xf423d,"stack":["0xe4404"],"memorySize":0}
 {"pc":6,"op":82,"opName":"MSTORE","gas":0xf423a,"stack":["0xe4404","0x0"],"memorySize":0}
-{"pc":7,"op":96,"opName":"PUSH1","gas":0xf4234,"stack":[],"memorySize":32}
-{"pc":9,"op":96,"opName":"PUSH1","gas":0xf4231,"stack":["0x3"],"memorySize":32}
-{"pc":11,"op":253,"opName":"REVERT","gas":0xf422e,"stack":["0x3","0x1d"],"memorySize":32}
-{"error":"revert","gas":0xf422e,"gasUsed":0x12,"output":"0e4404"}
+{"pc":7,"op":96,"opName":"PUSH1","gas":0xf4234,"stack":[],"memorySize":64}
+{"pc":9,"op":96,"opName":"PUSH1","gas":0xf4231,"stack":["0x3"],"memorySize":64}
+{"pc":11,"op":253,"opName":"REVERT","gas":0xf422e,"stack":["0x3","0x1d"],"memorySize":64}
+{"error":"revert","gas":0xf422e,"gasUsed":0x12,"output":"000000"}
 )");
 }
 
 TEST_F(tracing, trace_create)
 {
-    vm.add_tracer(zvmone::create_instruction_tracer(trace_stream));
+    vm.add_tracer(qrvmone::create_instruction_tracer(trace_stream));
 
     trace_stream << '\n';
     EXPECT_EQ(trace({}, 2), R"(
-{"depth":2,"rev":"Shanghai","static":false}
+{"depth":2,"rev":"Zond","static":false}
 {"error":null,"gas":0xf4240,"gasUsed":0x0,"output":""}
 )");
 }
 
 TEST_F(tracing, trace_static)
 {
-    vm.add_tracer(zvmone::create_instruction_tracer(trace_stream));
+    vm.add_tracer(qrvmone::create_instruction_tracer(trace_stream));
 
     trace_stream << '\n';
-    EXPECT_EQ(trace({}, 2, ZVMC_STATIC), R"(
-{"depth":2,"rev":"Shanghai","static":true}
+    EXPECT_EQ(trace({}, 2, QRVMC_STATIC), R"(
+{"depth":2,"rev":"Zond","static":true}
 {"error":null,"gas":0xf4240,"gasUsed":0x0,"output":""}
 )");
 }
 
 TEST_F(tracing, trace_undefined_instruction)
 {
-    vm.add_tracer(zvmone::create_instruction_tracer(trace_stream));
+    vm.add_tracer(qrvmone::create_instruction_tracer(trace_stream));
 
     const auto code = bytecode{} + OP_JUMPDEST + "EF";
     trace_stream << '\n';
     EXPECT_EQ(trace(code), R"(
-{"depth":0,"rev":"Shanghai","static":false}
+{"depth":0,"rev":"Zond","static":false}
 {"pc":0,"op":91,"opName":"JUMPDEST","gas":0xf4240,"stack":[],"memorySize":0}
 {"pc":1,"op":239,"opName":"0xef","gas":0xf423f,"stack":[],"memorySize":0}
 {"error":"undefined instruction","gas":0x0,"gasUsed":0xf4240,"output":""}

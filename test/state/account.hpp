@@ -1,28 +1,28 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2021 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
 #include <intx/intx.hpp>
-#include <zvmc/zvmc.hpp>
+#include <qrvmc/qrvmc.hpp>
 #include <unordered_map>
 
-namespace zvmone::state
+namespace qrvmone::state
 {
-using zvmc::address;
-using zvmc::bytes;
-using zvmc::bytes32;
+using qrvmc::address;
+using qrvmc::bytes;
+using qrvmc::bytes64;
 
 /// The representation of the account storage value.
 struct StorageValue
 {
     /// The current value.
-    bytes32 current = {};
+    bytes64 current = {};
 
     /// The original value.
-    bytes32 original = {};
+    bytes64 original = {};
 
-    zvmc_access_status access_status = ZVMC_ACCESS_COLD;
+    qrvmc_access_status access_status = QRVMC_ACCESS_COLD;
 };
 
 /// The state account.
@@ -38,7 +38,7 @@ struct Account
     intx::uint256 balance = {};
 
     /// The account storage map.
-    std::unordered_map<bytes32, StorageValue> storage = {};
+    std::unordered_map<bytes64, StorageValue> storage = {};
 
     /// The account code.
     bytes code = {};
@@ -51,11 +51,11 @@ struct Account
     /// or it is a newly created temporary account.
     bool erasable = false;
 
-    zvmc_access_status access_status = ZVMC_ACCESS_COLD;
+    qrvmc_access_status access_status = QRVMC_ACCESS_COLD;
 
     [[nodiscard]] bool is_empty() const noexcept
     {
         return code.empty() && nonce == 0 && balance == 0;
     }
 };
-}  // namespace zvmone::state
+}  // namespace qrvmone::state

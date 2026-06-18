@@ -1,24 +1,29 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2023 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
 #include "bloom_filter.hpp"
 #include "state.hpp"
 
-namespace zvmone::state
+namespace qrvmone::state
 {
 
 namespace
 {
 /// Adds an entry to the bloom filter.
 /// based on
-/// https://ethereum.github.io/execution-specs/autoapi/ethereum/shanghai/bloom/index.html#add-to-bloom
+/// https://ethereum.github.io/execution-specs/autoapi/ethereum/zond/bloom/index.html#add-to-bloom
 inline void add_to(BloomFilter& bf, const bytes_view& entry)
 {
     const auto hash = keccak256(entry);
 
+    // keccak256() returns the 32-byte digest right-aligned in the 64-byte
+    // hash256 container (bytes[32:64]); the upper half is zero padding. The
+    // bloom must read the actual digest bytes, so offset into the low half.
+    static constexpr size_t kDigestOffset = sizeof(hash.bytes) - 32;
+
     // take the least significant 11-bits of the first three 16-bit values
-    for (const auto i : {0, 2, 4})
+    for (const size_t i : {kDigestOffset, kDigestOffset + 2, kDigestOffset + 4})
     {
         const auto bit_to_set = ((hash.bytes[i] & 0x07) << 8) | hash.bytes[i + 1];
         const auto bit_index = 0x07FF - bit_to_set;
@@ -54,4 +59,4 @@ BloomFilter compute_bloom_filter(std::span<const TransactionReceipt> receipts) n
     return res;
 }
 
-}  // namespace zvmone::state
+}  // namespace qrvmone::state

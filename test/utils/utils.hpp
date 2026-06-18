@@ -1,15 +1,15 @@
-// zvmone: Fast Zond Virtual Machine implementation
+// qrvmone: Fast Quantum Resistant Virtual Machine implementation
 // Copyright 2018 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <zvmc/hex.hpp>
+#include <qrvmc/hex.hpp>
 
-using zvmc::bytes;
-using zvmc::bytes_view;
-using zvmc::from_hex;
-using zvmc::from_spaced_hex;
-using zvmc::hex;
+using qrvmc::bytes;
+using qrvmc::bytes_view;
+using qrvmc::from_hex;
+using qrvmc::from_spaced_hex;
+using qrvmc::hex;
 
 /// Converts a string to bytes by casting individual characters.
 inline bytes to_bytes(std::string_view s)
