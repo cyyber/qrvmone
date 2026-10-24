@@ -284,14 +284,31 @@ TEST_P(qrvm, call_depth_limit)
 
 TEST_P(qrvm, call_output)
 {
+    struct ReleaseTrackingHost : qrvmc::MockedHost
+    {
+        qrvmc::Result call(const qrvmc_message&) noexcept override
+        {
+            return qrvmc::Result{call_result};
+        }
+    };
+
+    ReleaseTrackingHost test_host;
     static bool result_is_correct = false;
     static uint8_t call_output[] = {0xa, 0xb};
 
-    host.accounts[{}].set_balance(1);
-    host.call_result.output_data = call_output;
-    host.call_result.output_size = sizeof(call_output);
-    host.call_result.release = [](const qrvmc_result* r) {
+    test_host.accounts[{}].set_balance(1);
+    test_host.call_result.output_data = call_output;
+    test_host.call_result.output_size = sizeof(call_output);
+    test_host.call_result.release = [](const qrvmc_result* r) {
         result_is_correct = r->output_size == sizeof(call_output) && r->output_data == call_output;
+    };
+    auto execute_with_test_host = [this, &test_host](const bytecode& code) noexcept {
+        msg.gas = std::numeric_limits<int64_t>::max();
+        test_host.access_account(msg.sender);
+        test_host.access_account(msg.recipient);
+        result = vm.execute(test_host, rev, msg, code.data(), code.size());
+        output = {result.output_data, result.output_size};
+        gas_used = msg.gas - result.gas_left;
     };
 
     auto code_prefix_output_1 = push(1) + 6 * OP_DUP1 + push("7fffffffffffffff");
@@ -301,7 +318,7 @@ TEST_P(qrvm, call_output)
     for (auto op : {OP_CALL, OP_DELEGATECALL, OP_STATICCALL})
     {
         result_is_correct = false;
-        execute(code_prefix_output_1 + hex(op) + code_suffix);
+        execute_with_test_host(code_prefix_output_1 + hex(op) + code_suffix);
         EXPECT_TRUE(result_is_correct);
         EXPECT_EQ(result.status_code, QRVMC_SUCCESS);
         ASSERT_EQ(result.output_size, 3);
@@ -311,7 +328,7 @@ TEST_P(qrvm, call_output)
 
 
         result_is_correct = false;
-        execute(code_prefix_output_0 + hex(op) + code_suffix);
+        execute_with_test_host(code_prefix_output_0 + hex(op) + code_suffix);
         EXPECT_TRUE(result_is_correct);
         EXPECT_EQ(result.status_code, QRVMC_SUCCESS);
         ASSERT_EQ(result.output_size, 3);
