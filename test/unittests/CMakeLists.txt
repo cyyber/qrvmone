@@ -33,6 +33,7 @@ target_sources(
     state_rlp_test.cpp
     state_transition.hpp
     state_transition.cpp
+    state_transition_access_test.cpp
     state_transition_block_test.cpp
     state_transition_create_test.cpp
     statetest_loader_block_info_test.cpp

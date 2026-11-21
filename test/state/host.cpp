@@ -327,7 +327,9 @@ qrvmc_access_status Host::access_account(const address& addr) noexcept
     const auto status = std::exchange(acc.access_status, QRVMC_ACCESS_WARM);
 
     // Overwrite status for precompiled contracts: they are always warm.
-    if (status == QRVMC_ACCESS_COLD && addr >= "Q01"_address && addr <= "Q09"_address)
+    // These are the addresses go-qrl puts in the access list of every transaction:
+    // the ones of its precompiles, Q01 to Q07.
+    if (status == QRVMC_ACCESS_COLD && addr >= "Q01"_address && addr <= "Q07"_address)
         return QRVMC_ACCESS_WARM;
 
     return status;

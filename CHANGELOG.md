@@ -28,6 +28,14 @@ and this project adheres to [Semantic Versioning].
   to `0x08` or `0x09` went through a null table entry. Addresses below the
   precompile boundary without a precompile (`0x03`, `0x09`) are now ordinary
   accounts.
+- The state test host reports as always warm the addresses go-qrl puts in the
+  access list of every transaction, the ones of its precompiles, `0x01` to
+  `0x07`. It did so for `0x08` and `0x09` too, where go-qrl has no precompile,
+  which made the first access to either 2500 gas cheaper than in go-qrl.
+- `qrvmone-conformance` starts every vector with the coinbase, the zero
+  address there, already warm, as go-qrl's runner does: go-qrl puts the
+  coinbase in the access list of every transaction. The first access to the
+  zero address cost 2500 gas more than in go-qrl.
 - Precompile output is not limited to 256 bytes any more. The `identity`
   precompile wrote past a 256-byte stack buffer for longer inputs in builds
   without assertions, and failed an assertion otherwise.

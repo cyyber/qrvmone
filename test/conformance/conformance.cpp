@@ -14,8 +14,9 @@
 ///
 /// The execution environment mirrors the go-qrl runner: a single CALL to a
 /// contract holding the bytecode, from a fixed origin, on an empty state, with
-/// the sender and recipient already warm. Error classes use the portable names
-/// of go-qrl's conformance.ErrorClass.
+/// the sender, the recipient and the coinbase (the zero address) already warm.
+/// The precompiles are warm too: that is up to the MockedHost. Error classes use
+/// the portable names of go-qrl's conformance.ErrorClass.
 
 #include <qrvmc/hex.hpp>
 #include <qrvmc/mocked_host.hpp>
@@ -124,6 +125,8 @@ int main()
         msg.input_size = input.size();
         host.access_account(msg.sender);
         host.access_account(msg.recipient);
+        // go-qrl has the coinbase in the access list too: here it is the zero address.
+        host.access_account(qrvmc::address{host.tx_context.block_coinbase});
 
         const auto result = vm.execute(host, QRVMC_ZOND, msg, code.data(), code.size());
 
