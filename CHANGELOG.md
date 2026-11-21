@@ -5,6 +5,60 @@ Documentation of all notable changes to the **qrvmone** project.
 The format is based on [Keep a Changelog],
 and this project adheres to [Semantic Versioning].
 
+## [Unreleased]
+
+### Added
+
+- The `TLOAD` (`0x5c`) and `TSTORE` (`0x5d`) instructions of
+  [EIP-1153](https://eips.ethereum.org/EIPS/eip-1153), the transient storage
+  go-qrl has in Zond since
+  [cyyber/go-qrl@a2b6b70](https://github.com/cyyber/go-qrl/commit/a2b6b70).
+  Each costs 100 gas, with no cold access, refund or minimum of gas left. As
+  for `SLOAD` and `SSTORE`, the key is the low 256 bits of the operand and the
+  value is a whole 64-byte word. `TSTORE` fails in a static call. The state
+  test host keeps the transient storage per account, reverts it with a call
+  that does not succeed and empties it after every transaction.
+
+### Changed
+
+- QRVMC is updated to the revision after 3.0.0 that has the Host methods of
+  the transient storage, `get_transient_storage` and `set_transient_storage`,
+  which `TLOAD` and `TSTORE` call. A Host has to be built against these
+  headers: the QRVMC ABI version is still 3, so the loader does not reject one
+  built against QRVMC 3.0.0, whose interface table ends before the two
+  methods. The update also brings the `MockedHost` that `qrvmone-conformance`
+  runs on to the always-warm addresses of go-qrl, `0x01` to `0x07`.
+- The `expmod` precompile (`0x05`) of the state test host is priced by
+  [EIP-7883](https://eips.ethereum.org/EIPS/eip-7883) and bounded by
+  [EIP-7823](https://eips.ethereum.org/EIPS/eip-7823), as go-qrl's `bigModExp`
+  is since [cyyber/go-qrl@6392e39](https://github.com/cyyber/go-qrl/commit/6392e39).
+  The minimum cost is 500 gas, the multiplication complexity is 16 for a base
+  and modulus of up to 32 bytes and `2 * words^2` above, every exponent byte
+  over 32 counts for 16 iterations, and the result is no longer divided by 3.
+  A call with a base, exponent or modulus length over 1024 bytes fails and
+  burns all its gas. As in go-qrl the change is not gated by a revision.
+
+### Fixed
+
+- The precompile table of the state test host is indexed by the precompile
+  address. It had been one entry short since the precompile at `0x03` was
+  removed, so every address from `0x03` up got the pricing and execution of
+  the next one (`0x04` was charged as `expmod`, `0x05` as `ecadd`) and a call
+  to `0x08` or `0x09` went through a null table entry. Addresses below the
+  precompile boundary without a precompile (`0x03`, `0x09`) are now ordinary
+  accounts.
+- The state test host reports as always warm the addresses go-qrl puts in the
+  access list of every transaction, the ones of its precompiles, `0x01` to
+  `0x07`. It did so for `0x08` and `0x09` too, where go-qrl has no precompile,
+  which made the first access to either 2500 gas cheaper than in go-qrl.
+- `qrvmone-conformance` starts every vector with the coinbase, the zero
+  address there, already warm, as go-qrl's runner does: go-qrl puts the
+  coinbase in the access list of every transaction. The first access to the
+  zero address cost 2500 gas more than in go-qrl.
+- Precompile output is not limited to 256 bytes any more. The `identity`
+  precompile wrote past a 256-byte stack buffer for longer inputs in builds
+  without assertions, and failed an assertion otherwise.
+
 ## [0.13.0] — 2026-11-13
 
 ### Added

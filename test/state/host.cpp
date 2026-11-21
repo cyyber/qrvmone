@@ -67,6 +67,22 @@ qrvmc_storage_status Host::set_storage(
     return status;
 }
 
+bytes64 Host::get_transient_storage(const address& addr, const bytes64& key) const noexcept
+{
+    const auto& acc = m_state.get(addr);
+    if (const auto it = acc.transient_storage.find(key); it != acc.transient_storage.end())
+        return it->second;
+    return {};
+}
+
+void Host::set_transient_storage(
+    const address& addr, const bytes64& key, const bytes64& value) noexcept
+{
+    // The changes of a call that does not succeed are reverted with the rest of the state:
+    // see Host::call().
+    m_state.get(addr).transient_storage[key] = value;
+}
+
 uint512be Host::get_balance(const address& addr) const noexcept
 {
     const auto* const acc = m_state.find(addr);
@@ -327,7 +343,9 @@ qrvmc_access_status Host::access_account(const address& addr) noexcept
     const auto status = std::exchange(acc.access_status, QRVMC_ACCESS_WARM);
 
     // Overwrite status for precompiled contracts: they are always warm.
-    if (status == QRVMC_ACCESS_COLD && addr >= "Q01"_address && addr <= "Q09"_address)
+    // These are the addresses go-qrl puts in the access list of every transaction:
+    // the ones of its precompiles, Q01 to Q07.
+    if (status == QRVMC_ACCESS_COLD && addr >= "Q01"_address && addr <= "Q07"_address)
         return QRVMC_ACCESS_WARM;
 
     return status;

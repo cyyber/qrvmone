@@ -185,6 +185,10 @@ std::variant<TransactionReceipt, std::error_code> transition(
     std::erase_if(state.get_accounts(),
         [](const std::pair<const address, Account>& p) noexcept { return p.second.destructed; });
 
+    // EIP-1153: the transient storage does not outlive the transaction.
+    for (auto& [_, acc] : state.get_accounts())
+        acc.transient_storage.clear();
+
     auto receipt = TransactionReceipt{tx.kind, result.status_code, gas_used, host.take_logs(), {}};
 
     // Cannot put it into constructor call because logs are std::moved from host instance.

@@ -67,9 +67,11 @@ void state_transition::TearDown()
         }
     }
 
-    for (const auto& [addr, _] : state.get_accounts())
+    for (const auto& [addr, acc] : state.get_accounts())
     {
         EXPECT_TRUE(expect.post.contains(addr)) << "unexpected account " << addr;
+        // EIP-1153: no transient storage is left after a transaction.
+        EXPECT_TRUE(acc.transient_storage.empty()) << "transient storage left in " << addr;
     }
 }
 }  // namespace qrvmone::test

@@ -280,6 +280,16 @@ inline bytecode sload(bytecode index)
     return index + OP_SLOAD;
 }
 
+inline bytecode tstore(bytecode index, bytecode value)
+{
+    return value + index + OP_TSTORE;
+}
+
+inline bytecode tload(bytecode index)
+{
+    return index + OP_TLOAD;
+}
+
 template <Opcode kind>
 struct call_instruction
 {
