@@ -67,6 +67,22 @@ qrvmc_storage_status Host::set_storage(
     return status;
 }
 
+bytes64 Host::get_transient_storage(const address& addr, const bytes64& key) const noexcept
+{
+    const auto& acc = m_state.get(addr);
+    if (const auto it = acc.transient_storage.find(key); it != acc.transient_storage.end())
+        return it->second;
+    return {};
+}
+
+void Host::set_transient_storage(
+    const address& addr, const bytes64& key, const bytes64& value) noexcept
+{
+    // The changes of a call that does not succeed are reverted with the rest of the state:
+    // see Host::call().
+    m_state.get(addr).transient_storage[key] = value;
+}
+
 uint512be Host::get_balance(const address& addr) const noexcept
 {
     const auto* const acc = m_state.find(addr);

@@ -40,6 +40,9 @@ struct Account
     /// The account storage map.
     std::unordered_map<bytes64, StorageValue> storage = {};
 
+    /// The account transient storage (EIP-1153). It is empty between transactions.
+    std::unordered_map<bytes64, bytes64> transient_storage = {};
+
     /// The account code.
     bytes code = {};
 

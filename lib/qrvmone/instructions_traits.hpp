@@ -92,6 +92,8 @@ constexpr inline GasCostTable gas_costs = []() noexcept {
     table[QRVMC_ZOND][OP_MSIZE] = 2;
     table[QRVMC_ZOND][OP_GAS] = 2;
     table[QRVMC_ZOND][OP_JUMPDEST] = 1;
+    table[QRVMC_ZOND][OP_TLOAD] = warm_storage_read_cost;
+    table[QRVMC_ZOND][OP_TSTORE] = warm_storage_read_cost;
     for (auto op = size_t{OP_PUSH1}; op <= OP_PUSH64; ++op)
         table[QRVMC_ZOND][op] = 3;
     for (auto op = size_t{OP_DUP1}; op <= OP_DUP16; ++op)
@@ -239,6 +241,8 @@ constexpr inline std::array<Traits, 256> traits = []() noexcept {
     table[OP_MSIZE] = {"MSIZE", 0, false, 0, 1, QRVMC_ZOND};
     table[OP_GAS] = {"GAS", 0, false, 0, 1, QRVMC_ZOND};
     table[OP_JUMPDEST] = {"JUMPDEST", 0, false, 0, 0, QRVMC_ZOND};
+    table[OP_TLOAD] = {"TLOAD", 0, false, 1, 0, QRVMC_ZOND};
+    table[OP_TSTORE] = {"TSTORE", 0, false, 2, -2, QRVMC_ZOND};
 
     table[OP_PUSH0] = {"PUSH0", 0, false, 0, 1, QRVMC_ZOND};
 

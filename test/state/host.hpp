@@ -56,6 +56,12 @@ private:
     qrvmc_storage_status set_storage(
         const address& addr, const bytes64& key, const bytes64& value) noexcept override;
 
+    [[nodiscard]] bytes64 get_transient_storage(
+        const address& addr, const bytes64& key) const noexcept override;
+
+    void set_transient_storage(
+        const address& addr, const bytes64& key, const bytes64& value) noexcept override;
+
     [[nodiscard]] uint512be get_balance(const address& addr) const noexcept override;
 
     [[nodiscard]] size_t get_code_size(const address& addr) const noexcept override;

@@ -678,8 +678,8 @@ TEST_P(qrvm, staticmode)
     auto code_prefix = 1 + 6 * OP_DUP1;
 
     rev = QRVMC_ZOND;
-    for (auto op :
-        {OP_SSTORE, OP_LOG0, OP_LOG1, OP_LOG2, OP_LOG3, OP_LOG4, OP_CALL, OP_CREATE, OP_CREATE2})
+    for (auto op : {OP_SSTORE, OP_TSTORE, OP_LOG0, OP_LOG1, OP_LOG2, OP_LOG3, OP_LOG4, OP_CALL,
+             OP_CREATE, OP_CREATE2})
     {
         msg.flags |= QRVMC_STATIC;
         execute(code_prefix + hex(op));

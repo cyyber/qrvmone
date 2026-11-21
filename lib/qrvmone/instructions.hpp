@@ -752,6 +752,30 @@ Result sload(StackTop stack, int64_t gas_left, ExecutionState& state) noexcept;
 
 Result sstore(StackTop stack, int64_t gas_left, ExecutionState& state) noexcept;
 
+/// TLOAD: loads the transient storage (EIP-1153) value at the low 256 bits of the key on top
+/// of the stack. As in go-qrl, the key is 32 bytes and the value is a whole 64-byte word.
+/// The cost is constant: transient storage has no cold access.
+inline Result tload(StackTop stack, int64_t gas_left, ExecutionState& state) noexcept
+{
+    auto& x = stack.top();
+    const auto key = store_storage_key(x);
+    x = intx::be::load<uint512>(state.host.get_transient_storage(state.msg->recipient, key));
+    return {QRVMC_SUCCESS, gas_left};
+}
+
+/// TSTORE: stores the value in the transient storage (EIP-1153) at the low 256 bits of the key.
+/// Unlike SSTORE it has a constant cost, no refund and no minimum of gas left to have.
+inline Result tstore(StackTop stack, int64_t gas_left, ExecutionState& state) noexcept
+{
+    if (state.in_static_mode())
+        return {QRVMC_STATIC_MODE_VIOLATION, gas_left};
+
+    const auto key = store_storage_key(stack.pop());
+    const auto value = store_uint(stack.pop());
+    state.host.set_transient_storage(state.msg->recipient, key, value);
+    return {QRVMC_SUCCESS, gas_left};
+}
+
 /// Internal jump implementation for JUMP/JUMPI instructions.
 inline code_iterator jump_impl(ExecutionState& state, const uint512& dst) noexcept
 {

@@ -7,8 +7,27 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+### Added
+
+- The `TLOAD` (`0x5c`) and `TSTORE` (`0x5d`) instructions of
+  [EIP-1153](https://eips.ethereum.org/EIPS/eip-1153), the transient storage
+  go-qrl has in Zond since
+  [cyyber/go-qrl@a2b6b70](https://github.com/cyyber/go-qrl/commit/a2b6b70).
+  Each costs 100 gas, with no cold access, refund or minimum of gas left. As
+  for `SLOAD` and `SSTORE`, the key is the low 256 bits of the operand and the
+  value is a whole 64-byte word. `TSTORE` fails in a static call. The state
+  test host keeps the transient storage per account, reverts it with a call
+  that does not succeed and empties it after every transaction.
+
 ### Changed
 
+- QRVMC is updated to the revision after 3.0.0 that has the Host methods of
+  the transient storage, `get_transient_storage` and `set_transient_storage`,
+  which `TLOAD` and `TSTORE` call. A Host has to be built against these
+  headers: the QRVMC ABI version is still 3, so the loader does not reject one
+  built against QRVMC 3.0.0, whose interface table ends before the two
+  methods. The update also brings the `MockedHost` that `qrvmone-conformance`
+  runs on to the always-warm addresses of go-qrl, `0x01` to `0x07`.
 - The `expmod` precompile (`0x05`) of the state test host is priced by
   [EIP-7883](https://eips.ethereum.org/EIPS/eip-7883) and bounded by
   [EIP-7823](https://eips.ethereum.org/EIPS/eip-7823), as go-qrl's `bigModExp`

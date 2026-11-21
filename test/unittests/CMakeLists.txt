@@ -13,6 +13,7 @@ target_sources(
     qrvm_test.cpp
     qrvm_calls_test.cpp
     qrvm_control_flow_test.cpp
+    qrvm_eip1153_transient_storage_test.cpp
     qrvm_eip2929_test.cpp
     qrvm_eip3198_basefee_test.cpp
     qrvm_eip3855_push0_test.cpp
@@ -36,6 +37,7 @@ target_sources(
     state_transition_access_test.cpp
     state_transition_block_test.cpp
     state_transition_create_test.cpp
+    state_transition_transient_storage_test.cpp
     statetest_loader_block_info_test.cpp
     statetest_loader_test.cpp
     statetest_loader_tx_test.cpp
