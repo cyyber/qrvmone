@@ -9,6 +9,7 @@
 #include <cassert>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <unordered_map>
 
 namespace qrvmone::state
@@ -73,28 +74,33 @@ PrecompileAnalysis expmod_analyze(bytes_view input, qrvmc_revision /*rev*/) noex
 {
     using namespace intx;
 
+    // The gas cost of EIP-7883 and the length limit of EIP-7823, as go-qrl's bigModExp
+    // has them (cyyber/go-qrl 6392e39). They are not revision dependent there.
     static constexpr size_t input_header_required_size = 3 * sizeof(uint256);
-    const int64_t min_gas = 200;
+    static constexpr int64_t min_gas = 500;
+    static constexpr size_t len_limit = 1024;
 
     uint8_t input_header[input_header_required_size]{};
     std::copy_n(input.data(), std::min(input.size(), input_header_required_size), input_header);
 
-    const auto base_len = be::unsafe::load<uint256>(&input_header[0]);
-    const auto exp_len = be::unsafe::load<uint256>(&input_header[32]);
-    const auto mod_len = be::unsafe::load<uint256>(&input_header[64]);
+    const auto base_len256 = be::unsafe::load<uint256>(&input_header[0]);
+    const auto exp_len256 = be::unsafe::load<uint256>(&input_header[32]);
+    const auto mod_len256 = be::unsafe::load<uint256>(&input_header[64]);
 
-    if (base_len == 0 && mod_len == 0)
-        return {min_gas, 0};
-
-    static constexpr auto len_limit = std::numeric_limits<size_t>::max();
-    if (base_len > len_limit || exp_len > len_limit || mod_len > len_limit)
+    // EIP-7823: go-qrl fails the call if any of the lengths is over the limit,
+    // and a failed precompile call takes all the gas it was given.
+    if (base_len256 > len_limit || exp_len256 > len_limit || mod_len256 > len_limit)
         return {GasCostMax, 0};
 
+    const auto base_len = static_cast<size_t>(base_len256);
+    const auto exp_len = static_cast<size_t>(exp_len256);
+    const auto mod_len = static_cast<size_t>(mod_len256);
+
     auto adjusted_len = [input](size_t offset, size_t len) {
+        // The part of the first 32 bytes of the exponent which is in the input.
+        // The input may end before it does or even before it starts: the rest is zeros.
         const auto head_len = std::min(len, size_t{32});
-        const auto head_explicit_len =
-            std::max(std::min(offset + head_len, input.size()), offset) - offset;
-        const bytes_view head_explicit_bytes(&input[offset], head_explicit_len);
+        const auto head_explicit_bytes = input.substr(std::min(offset, input.size()), head_len);
         const auto top_byte_index = head_explicit_bytes.find_first_not_of(uint8_t{0});
         const size_t exp_bit_width =
             (top_byte_index != bytes_view::npos) ?
@@ -103,21 +109,22 @@ PrecompileAnalysis expmod_analyze(bytes_view input, qrvmc_revision /*rev*/) noex
                 0;
 
         return std::max(
-            8 * (std::max(len, size_t{32}) - 32) + (std::max(exp_bit_width, size_t{1}) - 1),
+            16 * (std::max(len, size_t{32}) - 32) + (std::max(exp_bit_width, size_t{1}) - 1),
             size_t{1});
     };
 
-    static constexpr auto mult_complexity_eip2565 = [](const uint256& x) noexcept {
-        const auto w = (x + 7) >> 3;
-        return w * w;
+    static constexpr auto mult_complexity_eip7883 = [](size_t max_len) noexcept -> size_t {
+        if (max_len <= 32)
+            return 16;
+        const auto w = (max_len + 7) / 8;
+        return 2 * w * w;
     };
 
+    // Within the length limit the cost is at most 2 * 128^2 * (16 * 992 + 255): it cannot overflow.
     const auto max_len = std::max(mod_len, base_len);
-    const auto adjusted_exp_len = adjusted_len(
-        sizeof(input_header) + static_cast<size_t>(base_len), static_cast<size_t>(exp_len));
-    const auto gas = mult_complexity_eip2565(max_len) * adjusted_exp_len / 3;
-    return {std::max(min_gas, static_cast<int64_t>(std::min(gas, intx::uint256{GasCostMax}))),
-        static_cast<size_t>(mod_len)};
+    const auto adjusted_exp_len = adjusted_len(sizeof(input_header) + base_len, exp_len);
+    const auto gas = mult_complexity_eip7883(max_len) * adjusted_exp_len;
+    return {std::max(min_gas, static_cast<int64_t>(gas)), mod_len};
 }
 
 ExecutionResult identity_execute(const uint8_t* input, size_t input_size, uint8_t* output,
@@ -141,17 +148,20 @@ ExecutionResult dummy_execute(const uint8_t*, size_t, uint8_t*, size_t) noexcept
     return ExecutionResult{QRVMC_INTERNAL_ERROR, 0};
 }
 
+/// The traits of the precompiles indexed by the precompile id.
+/// The ids no precompile is assigned to (0, 3, 9) are left with the null traits.
 inline constexpr auto traits = []() noexcept {
-    std::array<PrecompileTraits, NumPrecompiles> tbl{{
-        {},  // undefined for 0
-        {depositroot_analyze, dummy_execute<PrecompileId::depositroot>},
-        {sha256_analyze, dummy_execute<PrecompileId::sha256>},
-        {identity_analyze, identity_execute},
-        {expmod_analyze, dummy_execute<PrecompileId::expmod>},
-        {ecadd_analyze, dummy_execute<PrecompileId::ecadd>},
-        {ecmul_analyze, dummy_execute<PrecompileId::ecmul>},
-        {ecpairing_analyze, dummy_execute<PrecompileId::ecpairing>},
-    }};
+    std::array<PrecompileTraits, NumPrecompiles> tbl{};
+    const auto at = [&tbl](PrecompileId id) noexcept -> PrecompileTraits& {
+        return tbl[stdx::to_underlying(id)];
+    };
+    at(PrecompileId::depositroot) = {depositroot_analyze, dummy_execute<PrecompileId::depositroot>};
+    at(PrecompileId::sha256) = {sha256_analyze, dummy_execute<PrecompileId::sha256>};
+    at(PrecompileId::identity) = {identity_analyze, identity_execute};
+    at(PrecompileId::expmod) = {expmod_analyze, dummy_execute<PrecompileId::expmod>};
+    at(PrecompileId::ecadd) = {ecadd_analyze, dummy_execute<PrecompileId::ecadd>};
+    at(PrecompileId::ecmul) = {ecmul_analyze, dummy_execute<PrecompileId::ecmul>};
+    at(PrecompileId::ecpairing) = {ecpairing_analyze, dummy_execute<PrecompileId::ecpairing>};
     return tbl;
 }();
 }  // namespace
@@ -174,6 +184,8 @@ std::optional<qrvmc::Result> call_precompile(qrvmc_revision rev, const qrvmc_mes
     assert(msg.gas >= 0);
 
     const auto [analyze, execute] = traits[id];
+    if (analyze == nullptr)
+        return {};  // No precompile at this address.
 
     const bytes_view input{msg.input_data, msg.input_size};
     const auto [gas_cost, max_output_size] = analyze(input, rev);
@@ -185,14 +197,15 @@ std::optional<qrvmc::Result> call_precompile(qrvmc_revision rev, const qrvmc_mes
     if (auto r = cache.find(static_cast<PrecompileId>(id), input, gas_left); r.has_value())
         return r;
 
-    uint8_t output_buf[256];  // Big enough to handle all "expmod" tests.
-    assert(std::size(output_buf) >= max_output_size);
+    // The output size has no fixed bound: "identity" returns as much as it is given.
+    const auto output_buf = std::make_unique<uint8_t[]>(max_output_size);
 
     const auto [status_code, output_size] =
-        execute(msg.input_data, msg.input_size, output_buf, max_output_size);
+        execute(msg.input_data, msg.input_size, output_buf.get(), max_output_size);
+    assert(output_size <= max_output_size);
 
     qrvmc::Result result{
-        status_code, status_code == QRVMC_SUCCESS ? gas_left : 0, 0, output_buf, output_size};
+        status_code, status_code == QRVMC_SUCCESS ? gas_left : 0, 0, output_buf.get(), output_size};
 
     cache.insert(static_cast<PrecompileId>(id), input, result);
 

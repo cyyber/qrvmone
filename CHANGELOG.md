@@ -5,6 +5,33 @@ Documentation of all notable changes to the **qrvmone** project.
 The format is based on [Keep a Changelog],
 and this project adheres to [Semantic Versioning].
 
+## [Unreleased]
+
+### Changed
+
+- The `expmod` precompile (`0x05`) of the state test host is priced by
+  [EIP-7883](https://eips.ethereum.org/EIPS/eip-7883) and bounded by
+  [EIP-7823](https://eips.ethereum.org/EIPS/eip-7823), as go-qrl's `bigModExp`
+  is since [cyyber/go-qrl@6392e39](https://github.com/cyyber/go-qrl/commit/6392e39).
+  The minimum cost is 500 gas, the multiplication complexity is 16 for a base
+  and modulus of up to 32 bytes and `2 * words^2` above, every exponent byte
+  over 32 counts for 16 iterations, and the result is no longer divided by 3.
+  A call with a base, exponent or modulus length over 1024 bytes fails and
+  burns all its gas. As in go-qrl the change is not gated by a revision.
+
+### Fixed
+
+- The precompile table of the state test host is indexed by the precompile
+  address. It had been one entry short since the precompile at `0x03` was
+  removed, so every address from `0x03` up got the pricing and execution of
+  the next one (`0x04` was charged as `expmod`, `0x05` as `ecadd`) and a call
+  to `0x08` or `0x09` went through a null table entry. Addresses below the
+  precompile boundary without a precompile (`0x03`, `0x09`) are now ordinary
+  accounts.
+- Precompile output is not limited to 256 bytes any more. The `identity`
+  precompile wrote past a 256-byte stack buffer for longer inputs in builds
+  without assertions, and failed an assertion otherwise.
+
 ## [0.13.0] — 2026-11-13
 
 ### Added
