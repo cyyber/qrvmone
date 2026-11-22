@@ -290,6 +290,11 @@ inline bytecode tload(bytecode index)
     return index + OP_TLOAD;
 }
 
+inline bytecode mcopy(bytecode dst, bytecode src, bytecode size)
+{
+    return size + src + dst + OP_MCOPY;
+}
+
 template <Opcode kind>
 struct call_instruction
 {
