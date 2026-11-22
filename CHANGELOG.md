@@ -18,6 +18,14 @@ and this project adheres to [Semantic Versioning].
   value is a whole 64-byte word. `TSTORE` fails in a static call. The state
   test host keeps the transient storage per account, reverts it with a call
   that does not succeed and empties it after every transaction.
+- The `MCOPY` (`0x5e`) instruction of
+  [EIP-5656](https://eips.ethereum.org/EIPS/eip-5656), which go-qrl has in
+  Zond since
+  [cyyber/go-qrl@4044cb7](https://github.com/cyyber/go-qrl/commit/4044cb7).
+  It copies a memory range to another one, which may overlap it, for 3 gas, 3
+  gas for each 64-byte word copied and the expansion of memory to the higher
+  of the two ranges. A copy of size 0 does not expand memory, whatever the
+  offsets.
 
 ### Changed
 
@@ -27,7 +35,9 @@ and this project adheres to [Semantic Versioning].
   headers: the QRVMC ABI version is still 3, so the loader does not reject one
   built against QRVMC 3.0.0, whose interface table ends before the two
   methods. The update also brings the `MockedHost` that `qrvmone-conformance`
-  runs on to the always-warm addresses of go-qrl, `0x01` to `0x07`.
+  runs on to the always-warm addresses of go-qrl, `0x01` to `0x07`, and
+  `MCOPY` to the instruction tables of QRVMC, which the unit tests compare
+  with the ones of qrvmone.
 - The `expmod` precompile (`0x05`) of the state test host is priced by
   [EIP-7883](https://eips.ethereum.org/EIPS/eip-7883) and bounded by
   [EIP-7823](https://eips.ethereum.org/EIPS/eip-7823), as go-qrl's `bigModExp`

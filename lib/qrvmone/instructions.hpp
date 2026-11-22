@@ -748,6 +748,33 @@ inline Result mstore8(StackTop stack, int64_t gas_left, ExecutionState& state) n
     return {QRVMC_SUCCESS, gas_left};
 }
 
+/// MCOPY: copies a memory range to another, possibly overlapping, memory range (EIP-5656).
+/// The memory grows to cover the higher of the two ranges, which covers the other one too.
+/// The dynamic cost is the one of the other copy instructions: 3 gas for each 64-byte word.
+inline Result mcopy(StackTop stack, int64_t gas_left, ExecutionState& state) noexcept
+{
+    const auto& dst_index = stack.pop();
+    const auto& src_index = stack.pop();
+    const auto& size = stack.pop();
+
+    if (!check_memory(gas_left, state.memory, std::max(dst_index, src_index), size))
+        return {QRVMC_OUT_OF_GAS, gas_left};
+
+    const auto dst = static_cast<size_t>(dst_index);
+    const auto src = static_cast<size_t>(src_index);
+    const auto s = static_cast<size_t>(size);
+
+    const auto copy_cost = num_words(s) * 3;
+    if ((gas_left -= copy_cost) < 0)
+        return {QRVMC_OUT_OF_GAS, gas_left};
+
+    // A copy of size 0 skips the memory check, so the offsets may be out of the memory.
+    if (s > 0)
+        std::memmove(&state.memory[dst], &state.memory[src], s);
+
+    return {QRVMC_SUCCESS, gas_left};
+}
+
 Result sload(StackTop stack, int64_t gas_left, ExecutionState& state) noexcept;
 
 Result sstore(StackTop stack, int64_t gas_left, ExecutionState& state) noexcept;

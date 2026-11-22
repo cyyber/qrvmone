@@ -131,7 +131,7 @@
     ON_OPCODE_IDENTIFIER(OP_JUMPDEST, jumpdest)             \
     ON_OPCODE_IDENTIFIER(OP_TLOAD, tload)                   \
     ON_OPCODE_IDENTIFIER(OP_TSTORE, tstore)                 \
-    ON_OPCODE_UNDEFINED(0x5e)                               \
+    ON_OPCODE_IDENTIFIER(OP_MCOPY, mcopy)                   \
     ON_OPCODE_IDENTIFIER(OP_PUSH0, push0)                   \
                                                             \
     ON_OPCODE_IDENTIFIER(OP_PUSH1, push<1>)                 \
