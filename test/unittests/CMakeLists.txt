@@ -19,6 +19,7 @@ target_sources(
     qrvm_eip3855_push0_test.cpp
     qrvm_eip3860_initcode_test.cpp
     qrvm_eip5656_mcopy_test.cpp
+    qrvm_eip7939_clz_test.cpp
     qrvm_memory_test.cpp
     qrvm_state_test.cpp
     qrvm_storage_test.cpp

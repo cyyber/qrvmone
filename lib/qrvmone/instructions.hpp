@@ -406,6 +406,15 @@ inline void sar(StackTop stack) noexcept
     x = (x >> y) | (sign_mask << mask_shift);
 }
 
+/// CLZ: counts the leading zero bits of the top stack item (EIP-7939).
+/// The count is over the 512-bit word, as in go-qrl: it is 512 for zero and, for a value
+/// below 2^256, 256 more than the count of the EIP.
+inline void clz(StackTop stack) noexcept
+{
+    auto& x = stack.top();
+    x = intx::clz(x);
+}
+
 inline Result keccak256(StackTop stack, int64_t gas_left, ExecutionState& state) noexcept
 {
     const auto& index = stack.pop();

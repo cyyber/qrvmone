@@ -26,6 +26,13 @@ and this project adheres to [Semantic Versioning].
   gas for each 64-byte word copied and the expansion of memory to the higher
   of the two ranges. A copy of size 0 does not expand memory, whatever the
   offsets.
+- The `CLZ` (`0x1e`) instruction of
+  [EIP-7939](https://eips.ethereum.org/EIPS/eip-7939), which go-qrl has in
+  Zond since
+  [cyyber/go-qrl@416ac52](https://github.com/cyyber/go-qrl/commit/416ac52).
+  It replaces the top stack item with the number of its leading zero bits,
+  for 5 gas. The count is over the 512-bit word, so it is 512 for zero and,
+  for a value below 2^256, 256 more than the count of the EIP.
 
 ### Changed
 
@@ -36,8 +43,8 @@ and this project adheres to [Semantic Versioning].
   built against QRVMC 3.0.0, whose interface table ends before the two
   methods. The update also brings the `MockedHost` that `qrvmone-conformance`
   runs on to the always-warm addresses of go-qrl, `0x01` to `0x07`, and
-  `MCOPY` to the instruction tables of QRVMC, which the unit tests compare
-  with the ones of qrvmone.
+  `MCOPY` and `CLZ` to the instruction tables of QRVMC, which the unit tests
+  compare with the ones of qrvmone.
 - The `expmod` precompile (`0x05`) of the state test host is priced by
   [EIP-7883](https://eips.ethereum.org/EIPS/eip-7883) and bounded by
   [EIP-7823](https://eips.ethereum.org/EIPS/eip-7823), as go-qrl's `bigModExp`

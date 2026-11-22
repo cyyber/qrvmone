@@ -186,6 +186,11 @@ inline bytecode iszero(bytecode a)
     return a + OP_ISZERO;
 }
 
+inline bytecode clz(bytecode a)
+{
+    return a + OP_CLZ;
+}
+
 inline bytecode eq(bytecode a, bytecode b)
 {
     return b + a + OP_EQ;

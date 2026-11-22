@@ -115,6 +115,7 @@ constexpr inline GasCostTable gas_costs = []() noexcept {
     table[QRVMC_ZOND][OP_SHL] = 3;
     table[QRVMC_ZOND][OP_SHR] = 3;
     table[QRVMC_ZOND][OP_SAR] = 3;
+    table[QRVMC_ZOND][OP_CLZ] = 5;
     table[QRVMC_ZOND][OP_EXTCODEHASH] = warm_storage_read_cost;
     table[QRVMC_ZOND][OP_CREATE2] = 32000;
     table[QRVMC_ZOND][OP_CHAINID] = 2;
@@ -200,6 +201,7 @@ constexpr inline std::array<Traits, 256> traits = []() noexcept {
     table[OP_SHL] = {"SHL", 0, false, 2, -1, QRVMC_ZOND};
     table[OP_SHR] = {"SHR", 0, false, 2, -1, QRVMC_ZOND};
     table[OP_SAR] = {"SAR", 0, false, 2, -1, QRVMC_ZOND};
+    table[OP_CLZ] = {"CLZ", 0, false, 1, 0, QRVMC_ZOND};
 
     table[OP_KECCAK256] = {"KECCAK256", 0, false, 2, -1, QRVMC_ZOND};
 
